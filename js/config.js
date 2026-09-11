@@ -76,6 +76,14 @@ const effectSettingsContainer = document.getElementById('effectSpecificSettings'
 const sidebar = document.getElementById('sidebar');
 const sidebarResizer = document.getElementById('sidebarResizer');
 
+// --- Undo/Redo Buttons ---
+const undoBtn = document.getElementById('undoBtn');
+const redoBtn = document.getElementById('redoBtn');
+
+// --- Rotation Slider ---
+const rotationSlider = document.getElementById('rotationSlider');
+const rotationVal = document.getElementById('rotationVal');
+
 // NOTE: There is a "Words Per Line" slider in the HTML (#focusedWordsPerLine)
 // but nothing in the codebase reads its value during layout — it currently
 // has no effect. Left as-is since wiring it up would change behavior;
