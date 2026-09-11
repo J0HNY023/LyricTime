@@ -281,3 +281,36 @@ if (toggleAdvancedBtn && advancedSettingsPanel) {
     toggleAdvancedBtn.setAttribute('aria-expanded', 'true');
   }
 }
+
+// --- Animation Controls Panel Toggle Logic ---
+const animationControlsToggle = document.getElementById('animationControlsToggle');
+const animationControlsPanel = document.getElementById('animationControlsPanel');
+
+if (animationControlsToggle && animationControlsPanel) {
+  animationControlsToggle.addEventListener('click', () => {
+    const isExpanded = animationControlsToggle.getAttribute('aria-expanded') !== 'false';
+    const newState = !isExpanded;
+    
+    // Update ARIA attributes
+    animationControlsToggle.setAttribute('aria-expanded', newState.toString());
+    
+    // Toggle visibility
+    if (newState) {
+      animationControlsPanel.style.display = 'block';
+      animationControlsToggle.innerHTML = '⚙';
+    } else {
+      animationControlsPanel.style.display = 'none';
+      animationControlsToggle.innerHTML = '⚙';
+    }
+    
+    // Save preference to localStorage
+    localStorage.setItem('animationControlsExpanded', newState.toString());
+  });
+
+  // Restore user's last preference on load
+  const wasExpanded = localStorage.getItem('animationControlsExpanded') !== 'false';
+  if (!wasExpanded) {
+    animationControlsPanel.style.display = 'none';
+    animationControlsToggle.setAttribute('aria-expanded', 'false');
+  }
+}
