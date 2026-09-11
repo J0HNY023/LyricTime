@@ -141,6 +141,10 @@ function buildWordStructuresFromAudio(wordsData) {
       wWidth += ctx.measureText(char).width + tracking;
     });
 
+    // Add word gap for focused-center layout mode
+    const wordGap = (layoutModeInput && layoutModeInput.value === 'focused-center') ? (parseFloat(centerXOffsetInput.value) || 0) : 0;
+    const effectiveSpaceWidth = spaceWidth + wordGap;
+
     // WRAP LOGIC
     if (currentX + wWidth > maxLineWidth && currentX > padding) {
       currentX = padding;
@@ -192,10 +196,11 @@ function buildWordStructuresFromAudio(wordsData) {
       animX: baseWordX,
       animY: baseWordY,
       targetX: baseWordX,
-      targetY: baseWordY
+      targetY: baseWordY,
+      rotation: wordItem.rotation || 0
     });
 
-    currentX += wWidth + spaceWidth;
+    currentX += wWidth + effectiveSpaceWidth;
   });
 
   textInput.value = wordsData.map(w => getDisplayText(w.word.trim())).join(' ');

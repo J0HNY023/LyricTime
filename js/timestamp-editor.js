@@ -5,6 +5,50 @@
 // Store selected word indices for batch operations
 let selectedTimestampIndices = [];
 
+// --- Timestamp Selection Functions ---
+window.toggleTimestampSelection = function(index) {
+  const pos = selectedTimestampIndices.indexOf(index);
+  if (pos === -1) {
+    selectedTimestampIndices.push(index);
+  } else {
+    selectedTimestampIndices.splice(pos, 1);
+  }
+  renderTimestampEditorUI();
+};
+
+window.selectAllTimestamps = function() {
+  selectedTimestampIndices = activeWordsData.map((_, i) => i);
+  renderTimestampEditorUI();
+};
+
+window.deselectAllTimestamps = function() {
+  selectedTimestampIndices = [];
+  renderTimestampEditorUI();
+};
+
+window.batchShiftTimestamps = function(direction) {
+  if (selectedTimestampIndices.length === 0) {
+    alert('No words selected. Use the checkboxes to select words first.');
+    return;
+  }
+  
+  const shiftInput = document.getElementById('batchShiftAmountInput');
+  const amount = (parseFloat(shiftInput.value) || 0.1) * direction;
+  
+  if (amount === 0) return;
+  
+  selectedTimestampIndices.forEach(index => {
+    const w = activeWordsData[index];
+    w.start = Math.max(0, parseFloat((w.start + amount).toFixed(2)));
+    w.end = Math.max(0.1, parseFloat((w.end + amount).toFixed(2)));
+  });
+  
+  saveState();
+  renderTimestampEditorUI();
+  buildWordStructuresFromAudio(activeWordsData);
+  drawFrameAtCurrentTime();
+};
+
 // --- Editor Toggle Logic ---
 window.toggleEditor = function () {
   const editor = document.getElementById('timestampEditorContainer');
