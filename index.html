@@ -174,11 +174,6 @@
         </div>
         <div class="collapsible-content">
           <div class="form-group">
-            <label for="centerXOffset">Word Gap <span id="centerXOffsetVal">0px</span></label>
-            <input type="range" id="centerXOffset" min="-50" max="200" step="1" value="0">
-          </div>
-          
-          <div class="form-group">
             <label for="rotationSlider">Rotation (Selected Words) <span id="rotationVal">0°</span></label>
             <input type="range" id="rotationSlider" min="-180" max="180" step="1" value="0">
           </div>
@@ -241,6 +236,11 @@
       <div id="advancedSettingsPanel" class="advanced-settings-panel" role="region" aria-label="Advanced typography settings" hidden>
         <div class="panel-header">
           <span>Typography & Animation Parameters</span>
+        </div>
+
+        <div class="form-group">
+          <label for="centerXOffset">Word Gap <span id="centerXOffsetVal">0px</span></label>
+          <input type="range" id="centerXOffset" name="centerXOffset" min="-50" max="200" step="1" value="0" aria-labelledby="centerXOffset" aria-valuemin="-50" aria-valuemax="200" aria-valuenow="0">
         </div>
 
         <div class="form-group">
