@@ -419,6 +419,11 @@ canvas.addEventListener('pointerdown', (e) => {
     isAllSelected = false;
     drawFrameAtCurrentTime();
   }
+  
+  // Handle double-click to edit text in focused-center layout
+  if (layoutModeInput.value === 'focused-center' && hitIndex !== -1) {
+    // Will be handled by dblclick event
+  }
 });
 
 // Single pointermove listener with O(1) drag updates
@@ -506,7 +511,7 @@ canvas.addEventListener('pointermove', (e) => {
 
   // 2. Hover cursor & Tooltip Text
   const hoverIndex = getWordAtPosition(coords.x, coords.y);
-  let tooltipText = 'Alt+A to Select All'; // Default text for empty space
+  let tooltipText = 'Ctrl+A to Select All'; // Default text for empty space
 
   if (selectedWordIndices.length > 0) {
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -557,7 +562,7 @@ canvas.addEventListener('pointermove', (e) => {
         tooltipText = 'Drag Group';
       } else {
         canvas.style.cursor = 'default';
-        tooltipText = 'Alt+A to Select All';
+        tooltipText = 'Ctrl+A to Select All';
       }
     } else {
       canvas.style.cursor = insideBox ? 'grab' : 'default';
@@ -610,7 +615,7 @@ canvas.addEventListener('pointermove', (e) => {
   // Apply tooltip text if Alt/Ctrl is held
   if ((isAltDown || isCtrlDown) && showAltTips) {
     if (isCtrlDown && !isAltDown) {
-      canvasTooltip.textContent = 'Ctrl + Drag to Select';
+      canvasTooltip.textContent = 'Ctrl + Drag to Marquee Select | Ctrl+A to Select All';
     } else if (isAltDown) {
       canvasTooltip.textContent = tooltipText;
     }
@@ -671,6 +676,7 @@ function endDrag(e) {
     draggedWordIndex = -1;
     dragStartStates = [];
     isResizing = false;
+    isRotating = false;
     isDragging = false;
     canvas.style.cursor = 'default';
 
@@ -684,7 +690,7 @@ function endDrag(e) {
 canvas.addEventListener('pointerup', endDrag);
 canvas.addEventListener('pointercancel', endDrag);
 
-// --- Canvas Double-Click Inline Editing ---
+// --- Canvas Double-Click Inline Editing (works on all layouts including focused-center) ---
 canvas.addEventListener('dblclick', (e) => {
   const coords = getCanvasCoordinates(e);
   const hitIndex = getWordAtPosition(coords.x, coords.y);

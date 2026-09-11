@@ -1,1 +1,3 @@
-(js/layouts.js, js/storage.js, js/timestamp-editor.js, js/ui-handlers.js, js/word-manager.js)
+(js/state.js, js/timestamp-editor.js, js/ui-handlers.js - these are all source files, no build artifacts, dependencies, or temp files in the changes)
+
+(empty)

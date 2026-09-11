@@ -26,6 +26,8 @@ let dragStartWordY = 0; // Stores exact visual Y on click
 
 // --- Resize State ---
 let isResizing = false;
+let isRotating = false;
+let rotateStartX = 0;
 let isAltDown = false;
 let isCtrlDown = false;
 
