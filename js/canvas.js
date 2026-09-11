@@ -203,27 +203,27 @@ function drawWordHighlight(obj, activeTime, driftSpeed, fontSize) {
   ctx.lineWidth = 1.5;
   ctx.strokeRect(x, y, width, height);
   
-  // Draw rotation handle icon at top-center of selected word
-  const handleSize = 10;
-  const handleX = obj.x - (handleSize / 2);
-  const handleY = y - handleSize - 4;
+  // Draw rotation handle icon at top-center of selected word (centered on border)
+  const handleSize = 12;
+  const handleY = y - handleSize - 6;
+  const centerX = obj.x; // Center of the rotated box
   
   ctx.fillStyle = '#00e5ff';
   ctx.beginPath();
-  ctx.arc(obj.x, handleY + (handleSize / 2), handleSize / 2, 0, Math.PI * 2);
+  ctx.arc(centerX, handleY + (handleSize / 2), handleSize / 2, 0, Math.PI * 2);
   ctx.fill();
   
   // Draw curved arrow to indicate rotation
   ctx.strokeStyle = '#00e5ff';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.arc(obj.x, handleY + (handleSize / 2), handleSize * 0.8, -Math.PI * 0.3, Math.PI * 0.8);
+  ctx.arc(centerX, handleY + (handleSize / 2), handleSize * 0.9, -Math.PI * 0.3, Math.PI * 0.8);
   ctx.stroke();
   
   // Draw arrowhead
   const arrowAngle = Math.PI * 0.8;
-  const arrowX = obj.x + Math.cos(arrowAngle) * handleSize * 0.8;
-  const arrowY = (handleY + (handleSize / 2)) + Math.sin(arrowAngle) * handleSize * 0.8;
+  const arrowX = centerX + Math.cos(arrowAngle) * handleSize * 0.9;
+  const arrowY = (handleY + (handleSize / 2)) + Math.sin(arrowAngle) * handleSize * 0.9;
   ctx.beginPath();
   ctx.moveTo(arrowX, arrowY);
   ctx.lineTo(arrowX - 3 * Math.cos(arrowAngle - Math.PI / 6), arrowY - 3 * Math.sin(arrowAngle - Math.PI / 6));

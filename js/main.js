@@ -28,7 +28,7 @@ function drawFrameAtCurrentTime() {
     drawMarquee();
     return;
   }
-
+  
   if (layoutModeInput.value === 'focused-center') {
     renderFocusedCenter(activeTime, fontSize, fontStyle, tracking, driftSpeed);
   } else {
@@ -38,6 +38,15 @@ function drawFrameAtCurrentTime() {
       // Draw highlight if dragged OR part of the selected group
       if (idx === draggedWordIndex || selectedWordIndices.includes(idx)) {
         drawWordHighlight(wordObj, activeTime, driftSpeed, fontSize);
+      }
+    });
+  }
+  
+  // Draw selection highlights for focused-center layout too
+  if (layoutModeInput.value === 'focused-center' && selectedWordIndices.length > 0) {
+    selectedWordIndices.forEach(idx => {
+      if (wordObjects[idx]) {
+        drawWordHighlight(wordObjects[idx], activeTime, driftSpeed, fontSize);
       }
     });
   }

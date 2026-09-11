@@ -190,9 +190,11 @@ triggerBtn.addEventListener('click', () => {
     return;
   }
   
+  // Deprecated: Just rebuild word structures without replaying animation
   isAudioSyncMode = false;
   saveState();
-  startAnimation();
+  buildWordStructures();
+  drawFrameAtCurrentTime();
 });
 
 window.addEventListener('resize', () => {
