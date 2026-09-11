@@ -13,9 +13,18 @@ document.addEventListener('keyup', (e) => {
   if (e.key === 'Control') isCtrlDown = false;
 });
 
+const wordCounter = document.getElementById('wordCounter');
+
 function updateCharCounter() {
   const currentLength = textInput.value.length;
   charCounter.textContent = `${currentLength} / ${MAX_CHARS}`;
+  
+  // Update word counter
+  const words = textInput.value.trim().split(/\s+/).filter(w => w.length > 0);
+  const wordCount = words.length;
+  if (wordCounter) {
+    wordCounter.textContent = wordCount;
+  }
 
   if (currentLength > MAX_CHARS * 0.9) {
     charCounter.style.color = '#ff7777';
@@ -32,22 +41,25 @@ function updateCharCounter() {
 // Combined input listener for the text area: cleans line breaks, enforces
 // the char limit, and keeps the counter/chips/labels/saved-state in sync.
 textInput.addEventListener('input', () => {
-  // 1. Remove all line breaks and replace them with a single space
-  let cleanText = textInput.value.replace(/[\r\n]+/g, ' ');
+  // For single-line input, just ensure no line breaks slip in
+  let cleanText = textInput.value.replace(/[\r\n]+/g, '');
   if (textInput.value !== cleanText) {
     textInput.value = cleanText;
   }
 
-  // 2. Enforce character limit
+  // Enforce character limit
   if (textInput.value.length > MAX_CHARS) {
     textInput.value = textInput.value.slice(0, MAX_CHARS);
   }
 
-  // 3. Update counter and chips
+  // Update counter and chips
   updateCharCounter();
   renderWordChips();
 
-  // 4. Save state
+  // Save state to undo stack
+  pushToUndoStack();
+  
+  // Save state
   updateLabels();
   saveState();
 });
@@ -64,10 +76,17 @@ function updateLabels() {
   driftVal.textContent = driftInput.value;
 }
 
-// Word-gap slider used by the "focused-center" layout
+// Word-gap slider used by all layouts (standard, subtitle, focused-center)
 centerXOffsetInput.addEventListener('input', () => {
   centerXOffsetVal.textContent = `${centerXOffsetInput.value}px`;
   saveState();
+  
+  if (isAudioSyncMode) {
+    buildWordStructuresFromAudio(activeWordsData);
+  } else {
+    buildWordStructures();
+  }
+  
   drawFrameAtCurrentTime();
 });
 
@@ -148,9 +167,45 @@ showAltTipsInput.addEventListener('change', () => {
 });
 
 triggerBtn.addEventListener('click', () => {
+  // If audio exists and is loaded, add timestamps with 0.24s spacing
+  if (audioElement.src && audioElement.src.length > 0) {
+    if (activeWordsData.length === 0) {
+      pushToUndoStack();
+      
+      const words = textInput.value.trim().split(/\s+/).filter(w => w.length > 0);
+      const defaultDuration = parseFloat(wordLifeInput.value) || 1.5;
+      const spacing = 0.24;
+      
+      activeWordsData = words.map((word, index) => ({
+        word: word,
+        start: index * spacing,
+        end: (index * spacing) + defaultDuration,
+        absX: 0,
+        absY: 0,
+        offsetX: 0,
+        offsetY: 0,
+        scale: 1.0,
+        rotation: 0
+      }));
+      
+      saveState();
+      renderTimestampEditorUI();
+      buildWordStructuresFromAudio(activeWordsData);
+      isAudioSyncMode = true;
+      drawFrameAtCurrentTime();
+    } else {
+      // Timestamps already exist, do nothing (cancel action)
+      console.log('Timestamps already exist. Click again to do nothing.');
+    }
+    return;
+  }
+  
+  // No audio: Just rebuild word structures without timestamps
+  pushToUndoStack();
   isAudioSyncMode = false;
   saveState();
-  startAnimation();
+  buildWordStructures();
+  drawFrameAtCurrentTime();
 });
 
 window.addEventListener('resize', () => {
@@ -160,18 +215,127 @@ window.addEventListener('resize', () => {
 
 // --- Enhanced Keyboard Controls ---
 document.addEventListener('keydown', (e) => {
-  // Alt + A to Select/Deselect All
-  if (e.altKey && e.code === 'KeyA') {
+  // Ctrl + Z for Undo, Ctrl + Y or Ctrl + Shift + Z for Redo
+  if (e.ctrlKey && e.code === 'KeyZ') {
     e.preventDefault();
-    isAllSelected = !isAllSelected;
-
-    if (isAllSelected) {
-      selectedWordIndices = wordObjects.map((_, i) => i);
+    if (e.shiftKey) {
+      redo();
     } else {
-      selectedWordIndices = [];
+      undo();
     }
-    drawFrameAtCurrentTime();
     return;
+  }
+  
+  if (e.ctrlKey && e.code === 'KeyY') {
+    e.preventDefault();
+    redo();
+    return;
+  }
+
+  // Ctrl + S to Save state manually
+  if (e.ctrlKey && e.code === 'KeyS') {
+    e.preventDefault();
+    saveState();
+    // Show brief visual feedback
+    const saveIndicator = document.createElement('div');
+    saveIndicator.textContent = '✓ Saved';
+    saveIndicator.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#00e5ff;color:#000;padding:8px 16px;border-radius:4px;font-size:0.75rem;font-weight:600;z-index:99999;animation:fadeout 2s forwards;';
+    document.body.appendChild(saveIndicator);
+    setTimeout(() => saveIndicator.remove(), 2000);
+    return;
+  }
+
+  // Delete/Backspace to remove selected words
+  if (e.code === 'Delete' || e.code === 'Backspace') {
+    const activeEl = document.activeElement;
+    const isTextInput = activeEl && (
+      activeEl.tagName === 'TEXTAREA' ||
+      (activeEl.tagName === 'INPUT' && ['text', 'number', 'password', 'search'].includes(activeEl.type))
+    );
+    
+    if (!isTextInput && selectedWordIndices.length > 0) {
+      e.preventDefault();
+      pushToUndoStack();
+      // Remove selected words from activeWordsData (in reverse order to maintain indices)
+      selectedWordIndices.sort((a, b) => b - a).forEach(idx => {
+        if (activeWordsData[idx]) {
+          activeWordsData.splice(idx, 1);
+        }
+      });
+      selectedWordIndices = [];
+      isAllSelected = false;
+      saveState();
+      renderTimestampEditorUI();
+      buildWordStructuresFromAudio(activeWordsData);
+      drawFrameAtCurrentTime();
+      return;
+    }
+  }
+
+  // Arrow keys for fine positioning when word(s) selected
+  if ((e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'ArrowLeft' || e.code === 'ArrowRight') && selectedWordIndices.length > 0) {
+    const activeEl = document.activeElement;
+    const isTextInput = activeEl && (
+      activeEl.tagName === 'TEXTAREA' ||
+      (activeEl.tagName === 'INPUT' && ['text', 'number', 'password', 'search'].includes(activeEl.type))
+    );
+    
+    if (!isTextInput) {
+      e.preventDefault();
+      pushToUndoStack();
+      const step = e.shiftKey ? 10 : 1; // Shift for faster movement
+      
+      selectedWordIndices.forEach(idx => {
+        if (wordObjects[idx]) {
+          if (e.code === 'ArrowUp') wordObjects[idx].y -= step;
+          if (e.code === 'ArrowDown') wordObjects[idx].y += step;
+          if (e.code === 'ArrowLeft') wordObjects[idx].x -= step;
+          if (e.code === 'ArrowRight') wordObjects[idx].x += step;
+          
+          // Sync back to data model
+          if (wordObjects[idx].dataIndex !== -1 && activeWordsData[wordObjects[idx].dataIndex]) {
+            activeWordsData[wordObjects[idx].dataIndex].absX = wordObjects[idx].x;
+            activeWordsData[wordObjects[idx].dataIndex].absY = wordObjects[idx].y;
+          }
+        }
+      });
+      
+      saveState();
+      drawFrameAtCurrentTime();
+      return;
+    }
+  }
+
+  // Ctrl + A to Select/Deselect All (works on canvas, not in text inputs)
+  if (e.ctrlKey && e.code === 'KeyA') {
+    const activeEl = document.activeElement;
+    const isTextInput = activeEl && (
+      activeEl.tagName === 'TEXTAREA' ||
+      (activeEl.tagName === 'INPUT' && ['text', 'number', 'password', 'search'].includes(activeEl.type))
+    );
+
+    // Only select all words if NOT focused on a text input
+    if (!isTextInput) {
+      e.preventDefault();
+      isAllSelected = !isAllSelected;
+
+      if (isAllSelected) {
+        selectedWordIndices = wordObjects.map((_, i) => i);
+        // Also sync with timestamp editor if in audio sync mode
+        if (isAudioSyncMode) {
+          selectedTimestampIndices = [...selectedWordIndices];
+          renderTimestampEditorUI();
+        }
+      } else {
+        selectedWordIndices = [];
+        selectedTimestampIndices = [];
+        if (isAudioSyncMode) {
+          renderTimestampEditorUI();
+        }
+      }
+      drawFrameAtCurrentTime();
+      return;
+    }
   }
 
   const activeEl = document.activeElement;
@@ -189,9 +353,16 @@ document.addEventListener('keydown', (e) => {
 
     if (audioElement.src) {
       if (audioElement.paused) {
-        audioElement.play();
-        playPauseBtn.textContent = '❚❚';
-        animationFrame = requestAnimationFrame(animate);
+        audioElement.play().then(() => {
+          playPauseBtn.textContent = '❚❚';
+          animationFrame = requestAnimationFrame(animate);
+        }).catch(err => {
+          if (err.name === 'NotAllowedError') {
+            console.warn('Playback requires user interaction. Click the Play button.');
+          } else {
+            console.error('Play error:', err);
+          }
+        });
       } else {
         audioElement.pause();
         playPauseBtn.textContent = '▶';
@@ -356,10 +527,21 @@ canvas.addEventListener('pointerdown', (e) => {
         startY: wordObjects[hitIndex].y,
         startScale: wordObjects[hitIndex].scale || 1.0
       }];
+      
+      // Sync rotation slider with new selection
+      syncRotationSlider();
     }
 
-    if (isAltDown) { isResizing = true; resizeStartX = coords.x; }
-    else { isDragging = true; }
+    // Check for rotation mode (Ctrl + Alt), resize mode (Alt only), or drag mode
+    if (isCtrlDown && isAltDown) {
+      isRotating = true;
+      rotateStartX = coords.x;
+    } else if (isAltDown) {
+      isResizing = true;
+      resizeStartX = coords.x;
+    } else {
+      isDragging = true;
+    }
   }
   else if (selectedWordIndices.length > 0) {
     const groupBox = getGroupBoundingBox(selectedWordIndices);
@@ -372,8 +554,16 @@ canvas.addEventListener('pointerdown', (e) => {
       dragStartStates = selectedWordIndices.map(idx => ({
         idx: idx, startX: wordObjects[idx].x, startY: wordObjects[idx].y, startScale: wordObjects[idx].scale || 1.0
       }));
-      if (isAltDown) { isResizing = true; resizeStartX = coords.x; }
-      else { isDragging = true; }
+      // Check for rotation mode (Ctrl + Alt), resize mode (Alt only), or drag mode
+      if (isCtrlDown && isAltDown) {
+        isRotating = true;
+        rotateStartX = coords.x;
+      } else if (isAltDown) {
+        isResizing = true;
+        resizeStartX = coords.x;
+      } else {
+        isDragging = true;
+      }
     } else {
       selectedWordIndices = [];
       isAllSelected = false;
@@ -384,6 +574,14 @@ canvas.addEventListener('pointerdown', (e) => {
     selectedWordIndices = [];
     isAllSelected = false;
     drawFrameAtCurrentTime();
+  }
+  
+  // Sync rotation slider with new selection
+  syncRotationSlider();
+  
+  // Handle double-click to edit text in focused-center layout
+  if (layoutModeInput.value === 'focused-center' && hitIndex !== -1) {
+    // Will be handled by dblclick event
   }
 });
 
@@ -403,6 +601,12 @@ canvas.addEventListener('pointermove', (e) => {
     canvasTooltip.style.display = 'block';
     canvasTooltip.style.left = `${e.clientX}px`;
     canvasTooltip.style.top = `${e.clientY}px`;
+    
+    if (isAltDown && !isCtrlDown) {
+      canvasTooltip.textContent = 'alt+ hover on edges to resize';
+    } else if (isCtrlDown) {
+      canvasTooltip.textContent = 'ctrl + a to select all | ctrl + drag to marquee select';
+    }
   } else {
     canvasTooltip.style.display = 'none';
   }
@@ -424,7 +628,7 @@ canvas.addEventListener('pointermove', (e) => {
       });
       drawFrameAtCurrentTime();
       canvas.style.cursor = 'nwse-resize';
-      if (isAltDown) canvasTooltip.textContent = 'Resizing...';
+      if (isAltDown) canvasTooltip.textContent = 'alt+ hover on edges to resize';
     } else if (isDragging) {
       dragStartStates.forEach(state => {
         let newAbsX = state.startX + dx;
@@ -454,10 +658,25 @@ canvas.addEventListener('pointermove', (e) => {
     }
     return;
   }
+  
+  // 1b. Active rotation (Ctrl + Alt + Drag horizontally)
+  if (draggedWordIndex !== -1 && isAltDown && e.ctrlKey) {
+    const dx = coords.x - dragStartX;
+    dragStartStates.forEach(state => {
+      let newRotation = (dx * 0.5) % 360; // 0.5 degrees per pixel
+      wordObjects[state.idx].rotation = newRotation;
+      if (wordObjects[state.idx].dataIndex !== -1) {
+        activeWordsData[wordObjects[state.idx].dataIndex].rotation = newRotation;
+      }
+    });
+    drawFrameAtCurrentTime();
+    canvasTooltip.textContent = `Rotating: ${Math.round((dx * 0.5) % 360)}°`;
+    return;
+  }
 
   // 2. Hover cursor & Tooltip Text
   const hoverIndex = getWordAtPosition(coords.x, coords.y);
-  let tooltipText = 'Alt+A to Select All'; // Default text for empty space
+  let tooltipText = 'alt+ hover on edges to resize'; // Default text for empty space when Alt is pressed
 
   if (selectedWordIndices.length > 0) {
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -508,7 +727,7 @@ canvas.addEventListener('pointermove', (e) => {
         tooltipText = 'Drag Group';
       } else {
         canvas.style.cursor = 'default';
-        tooltipText = 'Alt+A to Select All';
+        tooltipText = 'alt+ hover on edges to resize';
       }
     } else {
       canvas.style.cursor = insideBox ? 'grab' : 'default';
@@ -561,10 +780,15 @@ canvas.addEventListener('pointermove', (e) => {
   // Apply tooltip text if Alt/Ctrl is held
   if ((isAltDown || isCtrlDown) && showAltTips) {
     if (isCtrlDown && !isAltDown) {
-      canvasTooltip.textContent = 'Ctrl + Drag to Select';
+      canvasTooltip.textContent = 'Ctrl + Drag to Marquee Select | Ctrl+A to Select All';
+    } else if (isAltDown && isCtrlDown) {
+      canvasTooltip.textContent = 'Ctrl+Alt+Drag to Rotate';
     } else if (isAltDown) {
       canvasTooltip.textContent = tooltipText;
     }
+  } else if (showAltTips && hoverIndex !== -1) {
+    // Show default tooltip when hovering over a word without Alt/Ctrl
+    canvasTooltip.textContent = 'Resize / Drag';
   }
 });
 
@@ -610,6 +834,9 @@ function endDrag(e) {
 
       selectedWordIndices = newSelection;
       isAllSelected = false;
+      
+      // Sync rotation slider with new selection
+      syncRotationSlider();
     }
 
     drawFrameAtCurrentTime();
@@ -622,6 +849,7 @@ function endDrag(e) {
     draggedWordIndex = -1;
     dragStartStates = [];
     isResizing = false;
+    isRotating = false;
     isDragging = false;
     canvas.style.cursor = 'default';
 
@@ -635,7 +863,7 @@ function endDrag(e) {
 canvas.addEventListener('pointerup', endDrag);
 canvas.addEventListener('pointercancel', endDrag);
 
-// --- Canvas Double-Click Inline Editing ---
+// --- Canvas Double-Click Inline Editing (works on all layouts including focused-center) ---
 canvas.addEventListener('dblclick', (e) => {
   const coords = getCanvasCoordinates(e);
   const hitIndex = getWordAtPosition(coords.x, coords.y);
@@ -735,9 +963,71 @@ canvas.addEventListener('dblclick', (e) => {
   input.addEventListener('blur', commitEdit);
 });
 
+// --- Undo/Redo Buttons ---
+undoBtn.addEventListener('click', () => {
+  undo();
+});
+
+redoBtn.addEventListener('click', () => {
+  redo();
+});
+
+// --- Rotation Slider ---
+rotationSlider.addEventListener('input', () => {
+  const rotation = parseFloat(rotationSlider.value);
+  rotationVal.textContent = `${Math.round(rotation)}°`;
+  
+  // Apply rotation to all selected words
+  if (selectedWordIndices.length > 0) {
+    selectedWordIndices.forEach(idx => {
+      wordObjects[idx].rotation = rotation;
+      if (wordObjects[idx].dataIndex !== -1) {
+        activeWordsData[wordObjects[idx].dataIndex].rotation = rotation;
+      }
+    });
+    saveState();
+    drawFrameAtCurrentTime();
+  }
+});
+
+// Sync rotation slider with selected word's rotation when selection changes
+function syncRotationSlider() {
+  if (selectedWordIndices.length === 1) {
+    const idx = selectedWordIndices[0];
+    const rotation = wordObjects[idx].rotation || 0;
+    rotationSlider.value = rotation;
+    rotationVal.textContent = `${Math.round(rotation)}°`;
+  } else if (selectedWordIndices.length > 1) {
+    // Multiple selections - show average or reset
+    rotationSlider.value = 0;
+    rotationVal.textContent = 'Multiple';
+  } else {
+    rotationSlider.value = 0;
+    rotationVal.textContent = '0°';
+  }
+}
+
+// --- Collapsible Sections Toggle ---
+function toggleCollapse(header) {
+  const content = header.nextElementSibling;
+  const isCollapsed = content.classList.contains('collapsed');
+  
+  if (isCollapsed) {
+    content.classList.remove('collapsed');
+    header.classList.remove('collapsed');
+  } else {
+    content.classList.add('collapsed');
+    header.classList.add('collapsed');
+  }
+}
+
+// Make toggleCollapse available globally for onclick handlers
+window.toggleCollapse = toggleCollapse;
+
 // --- Sidebar Manual Resize Logic ---
+let isResizingSidebar = false;
+
 if (sidebar && sidebarResizer) {
-  let isResizingSidebar = false;
 
   sidebarResizer.addEventListener('pointerdown', (e) => {
     isResizingSidebar = true;

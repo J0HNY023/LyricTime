@@ -59,11 +59,18 @@ function renderWord(wordObj, elapsed, fontSize, fontStyle, tracking, driftSpeed,
   if (overrideY !== null) drawY = overrideY;
 
   const effect = textEffectInput.value;
+  const rotation = wordObj.rotation || 0;
   ctx.font = `${scaledFontSize}px ${fontStyle}`;
   const chars = wordObj.text.split('');
 
-  // Helper to draw text at the injected coordinates
+  // Helper to draw text at the injected coordinates with optional rotation
   const drawText = (color, offsetX = 0, offsetY = 0) => {
+    ctx.save();
+    if (rotation !== 0) {
+      ctx.translate(drawX, drawY);
+      ctx.rotate(rotation * Math.PI / 180);
+      ctx.translate(-drawX, -drawY);
+    }
     ctx.fillStyle = color;
     let charX = drawX + offsetX;
     chars.forEach(char => {
@@ -71,6 +78,7 @@ function renderWord(wordObj, elapsed, fontSize, fontStyle, tracking, driftSpeed,
       ctx.fillText(char, charX, drawY + offsetY);
       charX += charWidth + scaledTracking;
     });
+    ctx.restore();
   };
 
   // === EFFECT: NONE ===
@@ -380,3 +388,10 @@ textEffectInput.addEventListener('change', (e) => {
   saveState();
   if (!isAudioSyncMode) startAnimation();
 });
+
+// --- Initialize Cinematic UI on Page Load if Already Selected ---
+// This ensures that when the page is reloaded with cinematic-glitch active,
+// the settings panel is displayed immediately.
+if (textEffectInput && textEffectInput.value === 'cinematic-glitch') {
+  buildCinematicUI();
+}

@@ -148,6 +148,9 @@ window.applyTimestampEdits = function () {
   saveState();
 
   renderTimestampEditorUI();
+  
+  // Rebuild word structures to apply any text changes
+  buildWordStructuresFromAudio(activeWordsData);
   drawFrameAtCurrentTime();
 
   if (isAudioSyncMode && !audioElement.paused) {
@@ -203,6 +206,9 @@ window.shiftAllTimestamps = function (direction) {
   renderTimestampEditorUI();
   buildWordStructuresFromAudio(activeWordsData);
   drawFrameAtCurrentTime();
+  
+  // Save the shift amount to localStorage for persistence
+  localStorage.setItem('shiftAllAmount', Math.abs(amount).toFixed(2));
 };
 
 // --- Reset Layout Logic ---
@@ -223,16 +229,55 @@ document.getElementById('resetLayoutBtn').addEventListener('click', () => {
   if (isAudioSyncMode) {
     buildWordStructuresFromAudio(activeWordsData);
   } else {
-    buildWordStructures();
+    buildWordStructures(activeWordsData);
   }
 
-  // 4. Force a redraw
-  drawFrameAtCurrentTime();
-
-  // If in text mode, restart animation to show the reset
-  if (!isAudioSyncMode) {
-    startTime = null;
-    cancelAnimationFrame(animationFrame);
-    animationFrame = requestAnimationFrame(animate);
+  // 4. Redraw the canvas to show the reset positions immediately
+  if (typeof drawFrameAtCurrentTime === 'function') {
+    drawFrameAtCurrentTime();
   }
+
+  // 5. Provide visual feedback
+  const btn = document.getElementById('resetLayoutBtn');
+  const originalText = btn.textContent;
+  btn.textContent = '✓ Layout Reset!';
+  btn.style.background = '#1a4a1a';
+  setTimeout(() => {
+    btn.textContent = originalText;
+    btn.style.background = '#333';
+  }, 1500);
 });
+
+// --- Advanced Settings Toggle Logic ---
+const toggleAdvancedBtn = document.getElementById('toggleAdvancedBtn');
+const advancedSettingsPanel = document.getElementById('advancedSettingsPanel');
+
+if (toggleAdvancedBtn && advancedSettingsPanel) {
+  toggleAdvancedBtn.addEventListener('click', () => {
+    const isExpanded = toggleAdvancedBtn.getAttribute('aria-expanded') === 'true';
+    const newState = !isExpanded;
+    
+    // Update ARIA attributes
+    toggleAdvancedBtn.setAttribute('aria-expanded', newState.toString());
+    
+    // Toggle visibility
+    if (newState) {
+      advancedSettingsPanel.removeAttribute('hidden');
+      toggleAdvancedBtn.innerHTML = '⚙ Advanced Settings ▲';
+    } else {
+      advancedSettingsPanel.setAttribute('hidden', '');
+      toggleAdvancedBtn.innerHTML = '⚙ Advanced Settings ▼';
+    }
+    
+    // Save preference to localStorage
+    localStorage.setItem('advancedSettingsExpanded', newState.toString());
+  });
+
+  // Restore user's last preference on load
+  const wasExpanded = localStorage.getItem('advancedSettingsExpanded') === 'true';
+  if (wasExpanded) {
+    advancedSettingsPanel.removeAttribute('hidden');
+    toggleAdvancedBtn.innerHTML = '⚙ Advanced Settings ▲';
+    toggleAdvancedBtn.setAttribute('aria-expanded', 'true');
+  }
+}

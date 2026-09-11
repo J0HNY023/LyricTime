@@ -37,12 +37,16 @@ function buildWordStructures() {
     currentY = canvas.height - padding - (fontSize * 2);
   }
 
+  // Add word gap for all layout modes
+  const wordGap = parseFloat(centerXOffsetInput.value) || 0;
+  const effectiveSpaceWidth = spaceWidth + wordGap;
+
   rawLines.forEach((lineText, lineIndex) => {
     const words = lineText.trim().split(/\s+/).filter(w => w.length > 0);
     let currentX = padding;
     let wordIdx = 0;
 
-    words.forEach((wordText) => {
+    words.forEach((wordText, idx) => {
       let wWidth = 0;
       wordText.split('').forEach(char => {
         wWidth += ctx.measureText(char).width + tracking;
@@ -90,7 +94,12 @@ function buildWordStructures() {
         targetY: currentY
       });
 
-      currentX += wWidth + spaceWidth;
+      // Apply word gap after each word (except the last one on the line)
+      if (idx < words.length - 1) {
+        currentX += wWidth + effectiveSpaceWidth;
+      } else {
+        currentX += wWidth; // Last word doesn't need trailing gap
+      }
       globalWordIndex++;
       wordIdx++;
     });
@@ -134,12 +143,16 @@ function buildWordStructuresFromAudio(wordsData) {
   let globalIdx = 0;
   let currentX = padding;
 
-  wordsData.forEach((wordItem) => {
+  wordsData.forEach((wordItem, idx) => {
     const currentIndex = globalIdx++;
     let wWidth = 0;
     wordItem.word.trim().split('').forEach(char => {
       wWidth += ctx.measureText(char).width + tracking;
     });
+
+    // Add word gap for all layout modes (not just focused-center)
+    const wordGap = parseFloat(centerXOffsetInput.value) || 0;
+    const effectiveSpaceWidth = spaceWidth + wordGap;
 
     // WRAP LOGIC
     if (currentX + wWidth > maxLineWidth && currentX > padding) {
@@ -192,10 +205,16 @@ function buildWordStructuresFromAudio(wordsData) {
       animX: baseWordX,
       animY: baseWordY,
       targetX: baseWordX,
-      targetY: baseWordY
+      targetY: baseWordY,
+      rotation: wordItem.rotation || 0
     });
 
-    currentX += wWidth + spaceWidth;
+    // Apply word gap after each word (except the last one)
+    if (idx < wordsData.length - 1) {
+      currentX += wWidth + effectiveSpaceWidth;
+    } else {
+      currentX += wWidth; // Last word doesn't need trailing gap
+    }
   });
 
   textInput.value = wordsData.map(w => getDisplayText(w.word.trim())).join(' ');
@@ -254,16 +273,24 @@ function renderFocusedCenter(elapsed, fontSize, fontStyle, tracking, driftSpeed)
   for (let i = Math.max(0, currentWordIndex - 1); i < currentWordIndex; i++) if (wordObjects[i]) lines[1].words.push(wordObjects[i]);
   for (let i = currentWordIndex; i < Math.min(wordObjects.length, currentWordIndex + 3); i++) lines[2].words.push(wordObjects[i]);
 
-  lines.forEach(line => {
+  lines.forEach((line, lineIdx) => {
     if (line.words.length === 0) return;
 
     const wordGap = parseFloat(centerXOffsetInput.value) || 0;
     let totalWidth = 0;
-    line.words.forEach(w => totalWidth += ctx.measureText(w.text).width + tracking + wordGap);
+    
+    // Calculate total width with proper gap handling (no trailing gap on last word)
+    line.words.forEach((w, idx) => {
+      const wWidth = ctx.measureText(w.text).width;
+      totalWidth += wWidth + tracking;
+      if (idx < line.words.length - 1) {
+        totalWidth += wordGap; // Add gap only between words
+      }
+    });
 
     let startX = centerX - (totalWidth / 2);
 
-    line.words.forEach((w) => {
+    line.words.forEach((w, idx) => {
       const wWidth = ctx.measureText(w.text).width;
 
       // 1. Target position
@@ -280,7 +307,11 @@ function renderFocusedCenter(elapsed, fontSize, fontStyle, tracking, driftSpeed)
       // 4. Pass the animated position to renderWord
       renderWord(w, elapsed, fontSize, fontStyle, tracking, driftSpeed, w.animX, w.animY, line.opacity);
 
-      startX += wWidth + tracking + wordGap;
+      // Move startX for next word (with gap only if not last word)
+      startX += wWidth + tracking;
+      if (idx < line.words.length - 1) {
+        startX += wordGap;
+      }
     });
   });
 
@@ -291,6 +322,10 @@ function renderFocusedCenter(elapsed, fontSize, fontStyle, tracking, driftSpeed)
 // --- Layout Mode Switch ---
 layoutModeInput.addEventListener('change', () => {
   saveState();
+  
+  
+  // Word Gap setting is now always visible for all layouts (no need to toggle)
+  // The centerXOffset slider applies to all layout modes
   if (isAudioSyncMode) {
     buildWordStructuresFromAudio(activeWordsData);
   } else {
