@@ -19,7 +19,13 @@ window.toggleTimestampSelection = function(index, event) {
   } else {
     selectedTimestampIndices.splice(pos, 1);
   }
+  
+  // Sync selection with canvas
+  selectedWordIndices = [...selectedTimestampIndices];
+  isAllSelected = selectedTimestampIndices.length === activeWordsData.length;
+  
   renderTimestampEditorUI();
+  drawFrameAtCurrentTime();
 };
 
 window.selectAllTimestamps = function() {
@@ -185,7 +191,7 @@ function renderTimestampEditorUI() {
     html += `
       <div id="word-row-${index}" class="word-editor-row ${isSelected ? 'selected' : ''}" style="display:flex; flex-direction:column; gap:4px; background:#121218; padding:8px; border-radius:4px; border:1px solid ${isSelected ? '#00e5ff' : '#1a1a24'}; margin-bottom: 8px;">
         <div style="display:flex; align-items:center; gap:6px; flex-wrap: wrap;">
-          <input type="checkbox" onclick="toggleTimestampSelection(${index}, event)" ${isSelected ? 'checked' : ''} style="cursor:pointer;">
+          <input type="checkbox" data-index="${index}" ${isSelected ? 'checked' : ''} style="cursor:pointer;">
           <input type="text" value="${w.word.trim()}" onchange="updateWordData(${index}, 'word', this.value)" style="flex:2; min-width:100px; padding:4px; font-size:0.75rem; background:#09090c; border:1px solid #22222a; color:#fff; border-radius:3px;">
           <input type="number" step="0.1" value="${parseFloat(w.start).toFixed(2)}" onchange="updateWordData(${index}, 'start', parseFloat(this.value))" style="width:50px; padding:4px; font-size:0.75rem; background:#09090c; border:1px solid #22222a; color:#fff; border-radius:3px;">
           <span style="font-size:0.7rem; color:#8a8a98;">-</span>
@@ -209,10 +215,16 @@ function renderTimestampEditorUI() {
 
   editorContent.innerHTML = html;
 
-  // Force the browser to recalculate the layout/scroll height immediately
-  void editorContent.offsetHeight;
-
-  editorContent.scrollTop = 0;
+  // Attach checkbox listeners to prevent scroll jumping
+  const checkboxes = editorContent.querySelectorAll('input[type="checkbox"]');
+  checkboxes.forEach(cb => {
+    cb.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const index = parseInt(cb.getAttribute('data-index'));
+      toggleTimestampSelection(index, e);
+    });
+  });
 }
 
 function updateActiveWordHighlight(currentTime) {
