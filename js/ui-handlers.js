@@ -73,10 +73,17 @@ function updateLabels() {
   driftVal.textContent = driftInput.value;
 }
 
-// Word-gap slider used by the "focused-center" layout
+// Word-gap slider used by all layouts (standard, subtitle, focused-center)
 centerXOffsetInput.addEventListener('input', () => {
   centerXOffsetVal.textContent = `${centerXOffsetInput.value}px`;
   saveState();
+  
+  if (isAudioSyncMode) {
+    buildWordStructuresFromAudio(activeWordsData);
+  } else {
+    buildWordStructures();
+  }
+  
   drawFrameAtCurrentTime();
 });
 
@@ -210,8 +217,17 @@ document.addEventListener('keydown', (e) => {
 
       if (isAllSelected) {
         selectedWordIndices = wordObjects.map((_, i) => i);
+        // Also sync with timestamp editor if in audio sync mode
+        if (isAudioSyncMode) {
+          selectedTimestampIndices = [...selectedWordIndices];
+          renderTimestampEditorUI();
+        }
       } else {
         selectedWordIndices = [];
+        selectedTimestampIndices = [];
+        if (isAudioSyncMode) {
+          renderTimestampEditorUI();
+        }
       }
       drawFrameAtCurrentTime();
       return;

@@ -122,6 +122,12 @@ async function loadState() {
         if (state.textEffect === 'cinematic-glitch') {
           textEffectInput.value = 'cinematic-glitch';
           buildCinematicUI();
+        } else {
+          // Hide cinematic settings panel if not selected
+          const existingPanel = document.querySelector('.cinematic-config-panel');
+          if (existingPanel) {
+            existingPanel.style.display = 'none';
+          }
         }
       }
 
