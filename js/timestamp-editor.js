@@ -221,6 +221,11 @@ function renderTimestampEditorUI() {
     cb.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
+      // Prevent scrolling when checkbox is clicked
+      const row = cb.closest('.word-editor-row');
+      if (row) {
+        row.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+      }
       const index = parseInt(cb.getAttribute('data-index'));
       toggleTimestampSelection(index, e);
     });
