@@ -119,14 +119,23 @@ function animate(timestamp) {
   }
 }
 
-function startAnimation() {
+async function startAnimation() {
   cancelAnimationFrame(animationFrame);
   resizeCanvas();
 
   if (isAudioSyncMode) {
     audioElement.currentTime = 0;
-    audioElement.play();
-    playPauseBtn.textContent = '❚❚';
+    try {
+      await audioElement.play();
+      playPauseBtn.textContent = '❚❚';
+    } catch (err) {
+      if (err.name === 'NotAllowedError') {
+        console.warn('Playback requires user interaction. Click Play to start.');
+        playPauseBtn.textContent = '▶';
+      } else {
+        console.error('Play error:', err);
+      }
+    }
   } else {
     if (!audioElement.paused) audioElement.pause();
     buildWordStructures();

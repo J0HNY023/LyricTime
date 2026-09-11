@@ -353,9 +353,16 @@ document.addEventListener('keydown', (e) => {
 
     if (audioElement.src) {
       if (audioElement.paused) {
-        audioElement.play();
-        playPauseBtn.textContent = '❚❚';
-        animationFrame = requestAnimationFrame(animate);
+        audioElement.play().then(() => {
+          playPauseBtn.textContent = '❚❚';
+          animationFrame = requestAnimationFrame(animate);
+        }).catch(err => {
+          if (err.name === 'NotAllowedError') {
+            console.warn('Playback requires user interaction. Click the Play button.');
+          } else {
+            console.error('Play error:', err);
+          }
+        });
       } else {
         audioElement.pause();
         playPauseBtn.textContent = '▶';
@@ -773,7 +780,7 @@ canvas.addEventListener('pointermove', (e) => {
     } else if (isAltDown) {
       canvasTooltip.textContent = tooltipText;
     }
-  } else if (showAltTips && hoveredWordIndex !== -1) {
+  } else if (showAltTips && hoverIndex !== -1) {
     // Show default tooltip when hovering over a word without Alt/Ctrl
     canvasTooltip.textContent = 'Resize / Drag';
   }
