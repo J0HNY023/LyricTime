@@ -206,6 +206,9 @@ window.shiftAllTimestamps = function (direction) {
   renderTimestampEditorUI();
   buildWordStructuresFromAudio(activeWordsData);
   drawFrameAtCurrentTime();
+  
+  // Save the shift amount to localStorage for persistence
+  localStorage.setItem('shiftAllAmount', Math.abs(amount).toFixed(2));
 };
 
 // --- Reset Layout Logic ---

@@ -165,32 +165,37 @@ showAltTipsInput.addEventListener('change', () => {
 
 triggerBtn.addEventListener('click', () => {
   // If audio exists and is loaded, add timestamps with 0.24s spacing
-  if (audioElement.src && audioElement.src.length > 0 && activeWordsData.length === 0) {
-    const words = textInput.value.trim().split(/\s+/).filter(w => w.length > 0);
-    const defaultDuration = parseFloat(wordLifeInput.value) || 1.5;
-    const spacing = 0.24;
-    
-    activeWordsData = words.map((word, index) => ({
-      word: word,
-      start: index * spacing,
-      end: (index * spacing) + defaultDuration,
-      absX: 0,
-      absY: 0,
-      offsetX: 0,
-      offsetY: 0,
-      scale: 1.0,
-      rotation: 0
-    }));
-    
-    saveState();
-    renderTimestampEditorUI();
-    buildWordStructuresFromAudio(activeWordsData);
-    isAudioSyncMode = true;
-    drawFrameAtCurrentTime();
+  if (audioElement.src && audioElement.src.length > 0) {
+    if (activeWordsData.length === 0) {
+      const words = textInput.value.trim().split(/\s+/).filter(w => w.length > 0);
+      const defaultDuration = parseFloat(wordLifeInput.value) || 1.5;
+      const spacing = 0.24;
+      
+      activeWordsData = words.map((word, index) => ({
+        word: word,
+        start: index * spacing,
+        end: (index * spacing) + defaultDuration,
+        absX: 0,
+        absY: 0,
+        offsetX: 0,
+        offsetY: 0,
+        scale: 1.0,
+        rotation: 0
+      }));
+      
+      saveState();
+      renderTimestampEditorUI();
+      buildWordStructuresFromAudio(activeWordsData);
+      isAudioSyncMode = true;
+      drawFrameAtCurrentTime();
+    } else {
+      // Timestamps already exist, do nothing (cancel action)
+      console.log('Timestamps already exist. Click again to do nothing.');
+    }
     return;
   }
   
-  // Deprecated: Just rebuild word structures without replaying animation
+  // No audio: Just rebuild word structures without timestamps
   isAudioSyncMode = false;
   saveState();
   buildWordStructures();
@@ -538,8 +543,8 @@ canvas.addEventListener('pointermove', (e) => {
     return;
   }
   
-  // 1b. Active rotation (Shift + Alt + Drag horizontally)
-  if (draggedWordIndex !== -1 && isAltDown && e.shiftKey) {
+  // 1b. Active rotation (Ctrl + Alt + Drag horizontally)
+  if (draggedWordIndex !== -1 && isAltDown && e.ctrlKey) {
     const dx = coords.x - dragStartX;
     dragStartStates.forEach(state => {
       let newRotation = (dx * 0.5) % 360; // 0.5 degrees per pixel
@@ -660,6 +665,8 @@ canvas.addEventListener('pointermove', (e) => {
   if ((isAltDown || isCtrlDown) && showAltTips) {
     if (isCtrlDown && !isAltDown) {
       canvasTooltip.textContent = 'Ctrl + Drag to Marquee Select | Ctrl+A to Select All';
+    } else if (isAltDown && isCtrlDown) {
+      canvasTooltip.textContent = 'Ctrl+Alt+Drag to Rotate';
     } else if (isAltDown) {
       canvasTooltip.textContent = tooltipText;
     }
