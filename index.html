@@ -70,16 +70,18 @@
     <div class="sidebar-resizer" id="sidebarResizer"></div>
 
     <div class="sidebar-content">
-      <h2>Animation Controls</h2>
-
-      <div class="form-group">
-        <label for="debugMode">
-          <span>Debug Mode (Show Grid)</span>
+      <!-- Animation Controls & Debug Mode Container -->
+      <div class="form-group" style="flex-direction: row; align-items: center; justify-content: space-between;">
+        <button id="animationControlsToggle" class="audio-btn" title="Toggle Animation Controls Panel" style="width: 32px; height: 32px; font-size: 0.9rem;" aria-label="Toggle Animation Controls Panel">⚙</button>
+        <label for="debugMode" style="display: flex; align-items: center; gap: 8px; margin: 0;">
+          <span style="font-size: 0.75rem; color: #8a8a98; text-transform: uppercase;">Debug Mode</span>
           <input type="checkbox" id="debugMode" name="debugMode" style="width:auto; margin:0;" aria-describedby="debugModeDesc">
         </label>
-        <span id="debugModeDesc" style="font-size:0.7rem; color:#6a6a78;">Display grid overlay for positioning</span>
       </div>
+      <span id="debugModeDesc" style="font-size:0.65rem; color:#6a6a78; display:block; margin-top:-4px;">Show grid overlay</span>
 
+      <!-- Animation Controls Panel (Collapsible) -->
+      <div id="animationControlsPanel">
       <div class="form-group">
         <label for="showAltTips">
           <span>Show Tooltips</span>
@@ -278,6 +280,8 @@
           <input type="range" id="focusedWordsPerLine" name="focusedWordsPerLine" min="2" max="8" step="1" value="4" aria-labelledby="focusedWordsPerLine" aria-valuemin="2" aria-valuemax="8" aria-valuenow="4">
         </div>
       </div>
+
+      </div><!-- End animationControlsPanel -->
 
       <div id="effectSpecificSettings" style="margin-top: 20px; border-top: 1px solid #22222a; padding-top: 15px; display: none;" role="region" aria-label="Effect-specific settings"></div>
     </div>
