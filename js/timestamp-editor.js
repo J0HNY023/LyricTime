@@ -6,7 +6,13 @@
 let selectedTimestampIndices = [];
 
 // --- Timestamp Selection Functions ---
-window.toggleTimestampSelection = function(index) {
+window.toggleTimestampSelection = function(index, event) {
+  // Prevent scrolling to top when checkbox is clicked
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  
   const pos = selectedTimestampIndices.indexOf(index);
   if (pos === -1) {
     selectedTimestampIndices.push(index);
@@ -139,37 +145,41 @@ function renderTimestampEditorUI() {
   }
 
   let html = `
-    <!-- Global Time Offset Control -->
-    <div style="display:flex; align-items:center; gap:8px; background:#0e0e14; padding:8px; border-radius:4px; border:1px solid #22222a; font-size:0.75rem; color:#aaa; flex-wrap: wrap; margin-bottom: 12px;">
-      <span>Shift All Times:</span>
-      <input type="number" id="shiftAmountInput" value="0.5" step="0.1" style="width:45px; padding:2px 4px; font-size:0.75rem; background:#09090c; border:1px solid #333; color:#fff; border-radius:3px;">
-      <span>s</span>
-      <button onclick="shiftAllTimestamps(1)" style="background:#222230; color:#00e5ff; border:1px solid #333345; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.7rem;">+ Shift</button>
-      <button onclick="shiftAllTimestamps(-1)" style="background:#222230; color:#ff7777; border:1px solid #333345; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.7rem;">- Shift</button>
-      <button onclick="applyTimestampEdits()" class="btn-primary" style="margin:0 0 0 auto; padding:4px 12px; font-size:0.7rem; background:#8a2be2; color:#fff;">Apply & Sort</button>
-    </div>
-    
-    <!-- Timestamp Increment Settings -->
-    <div style="display:flex; align-items:center; gap:8px; background:#0e0e14; padding:8px; border-radius:4px; border:1px solid #22222a; font-size:0.75rem; color:#aaa; flex-wrap: wrap; margin-bottom: 12px;">
-      <span>Timestamp Step:</span>
-      <input type="number" id="timestampStepInput" value="0.1" step="0.05" min="0.01" onchange="updateTimestampSteps()" style="width:50px; padding:2px 4px; font-size:0.75rem; background:#09090c; border:1px solid #333; color:#fff; border-radius:3px;">
-      <span>s</span>
-      <span style="margin-left:8px;">Use arrows on timestamp inputs to increment by this amount.</span>
-    </div>
-    
-    <!-- Batch Selection Controls -->
-    <div style="display:flex; align-items:center; gap:8px; background:#0e0e14; padding:8px; border-radius:4px; border:1px solid #22222a; font-size:0.75rem; color:#aaa; flex-wrap: wrap; margin-bottom: 12px;">
-      <span>Select:</span>
-      <button onclick="selectAllTimestamps()" style="background:#222230; color:#00e5ff; border:1px solid #333345; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.7rem;">All</button>
-      <button onclick="deselectAllTimestamps()" style="background:#222230; color:#aaa; border:1px solid #333345; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.7rem;">None</button>
-      <span style="margin-left:auto;" id="selectedCountDisplay">0 selected</span>
-    </div>
-    <div style="display:flex; align-items:center; gap:8px; background:#0e0e14; padding:8px; border-radius:4px; border:1px solid #22222a; font-size:0.75rem; color:#aaa; flex-wrap: wrap; margin-bottom: 12px;">
-      <span>Batch Shift Selected:</span>
-      <input type="number" id="batchShiftAmountInput" value="0.1" step="0.05" style="width:45px; padding:2px 4px; font-size:0.75rem; background:#09090c; border:1px solid #333; color:#fff; border-radius:3px;">
-      <span>s</span>
-      <button onclick="batchShiftTimestamps(1)" style="background:#222230; color:#00e5ff; border:1px solid #333345; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.7rem;">+ Shift</button>
-      <button onclick="batchShiftTimestamps(-1)" style="background:#222230; color:#ff7777; border:1px solid #333345; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.7rem;">- Shift</button>
+    <!-- Combined Timestamp Controls Container -->
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:8px; background:#0e0e14; padding:8px; border-radius:4px; border:1px solid #22222a; font-size:0.75rem; color:#aaa; margin-bottom: 12px;">
+      <!-- Shift All Times -->
+      <div style="display:flex; align-items:center; gap:6px; flex-wrap: wrap;">
+        <span title="Shift all timestamps by specified amount">Shift All:</span>
+        <input type="number" id="shiftAmountInput" value="0.5" step="0.1" style="width:45px; padding:2px 4px; font-size:0.75rem; background:#09090c; border:1px solid #333; color:#fff; border-radius:3px;">
+        <span>s</span>
+        <button onclick="shiftAllTimestamps(1)" title="Shift all times forward" style="background:#222230; color:#00e5ff; border:1px solid #333345; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.7rem;">+</button>
+        <button onclick="shiftAllTimestamps(-1)" title="Shift all times backward" style="background:#222230; color:#ff7777; border:1px solid #333345; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.7rem;">-</button>
+        <button onclick="applyTimestampEdits()" class="btn-primary" title="Apply changes and sort timestamps" style="margin-left:auto; padding:4px 12px; font-size:0.7rem; background:#8a2be2; color:#fff;">Apply & Sort</button>
+      </div>
+      
+      <!-- Timestamp Step -->
+      <div style="display:flex; align-items:center; gap:6px; flex-wrap: wrap;">
+        <span title="Increment step for timestamp arrow keys">Step:</span>
+        <input type="number" id="timestampStepInput" value="0.1" step="0.05" min="0.01" onchange="updateTimestampSteps()" style="width:50px; padding:2px 4px; font-size:0.75rem; background:#09090c; border:1px solid #333; color:#fff; border-radius:3px;">
+        <span>s</span>
+      </div>
+      
+      <!-- Selection Controls -->
+      <div style="display:flex; align-items:center; gap:6px; flex-wrap: wrap;">
+        <span title="Select or deselect all words">Select:</span>
+        <button onclick="selectAllTimestamps()" title="Select all words" style="background:#222230; color:#00e5ff; border:1px solid #333345; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.7rem;">All</button>
+        <button onclick="deselectAllTimestamps()" title="Deselect all words" style="background:#222230; color:#aaa; border:1px solid #333345; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.7rem;">None</button>
+        <span style="margin-left:auto;" id="selectedCountDisplay">0 selected</span>
+      </div>
+      
+      <!-- Batch Shift Selected -->
+      <div style="display:flex; align-items:center; gap:6px; flex-wrap: wrap;">
+        <span title="Shift only selected words">Batch Shift:</span>
+        <input type="number" id="batchShiftAmountInput" value="0.1" step="0.05" style="width:45px; padding:2px 4px; font-size:0.75rem; background:#09090c; border:1px solid #333; color:#fff; border-radius:3px;">
+        <span>s</span>
+        <button onclick="batchShiftTimestamps(1)" title="Shift selected words forward" style="background:#222230; color:#00e5ff; border:1px solid #333345; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.7rem;">+</button>
+        <button onclick="batchShiftTimestamps(-1)" title="Shift selected words backward" style="background:#222230; color:#ff7777; border:1px solid #333345; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.7rem;">-</button>
+      </div>
     </div>
 
     <div class="word-editor-list-below">
@@ -180,7 +190,7 @@ function renderTimestampEditorUI() {
     html += `
       <div id="word-row-${index}" class="word-editor-row ${isSelected ? 'selected' : ''}" style="display:flex; flex-direction:column; gap:4px; background:#121218; padding:8px; border-radius:4px; border:1px solid ${isSelected ? '#00e5ff' : '#1a1a24'}; margin-bottom: 8px;">
         <div style="display:flex; align-items:center; gap:6px; flex-wrap: wrap;">
-          <input type="checkbox" onchange="toggleTimestampSelection(${index})" ${isSelected ? 'checked' : ''} style="cursor:pointer;">
+          <input type="checkbox" onclick="toggleTimestampSelection(${index}, event)" ${isSelected ? 'checked' : ''} style="cursor:pointer;">
           <input type="text" value="${w.word.trim()}" onchange="updateWordData(${index}, 'word', this.value)" style="flex:2; min-width:100px; padding:4px; font-size:0.75rem; background:#09090c; border:1px solid #22222a; color:#fff; border-radius:3px;">
           <input type="number" step="0.1" value="${parseFloat(w.start).toFixed(2)}" onchange="updateWordData(${index}, 'start', parseFloat(this.value))" style="width:50px; padding:4px; font-size:0.75rem; background:#09090c; border:1px solid #22222a; color:#fff; border-radius:3px;">
           <span style="font-size:0.7rem; color:#8a8a98;">-</span>
