@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimalist Per-Word Dust Dissolve Animation with Speech Recognition</title>
+
+  <link rel="stylesheet" href="css/Lstyle.css">
+</head>
+<body>
+
+  <!-- Main Content Area (Left Side) -->
+  <div class="main-content">
+
+    <!-- Canvas Area (Takes all available space) -->
+    <div class="canvas-area">
+      <div class="canvas-viewport">
+        <canvas id="animCanvas"></canvas>
+
+        <!-- Audio Timeline Player Bar -->
+        <div id="audioControls" class="audio-controls-bar">
+          <button id="playPauseBtn" class="audio-btn">▶</button>
+          <button id="loopBtn" class="audio-btn" title="Toggle Loop" style="font-size:0.75rem;">🔁</button>
+          <button id="fullscreenBtn" class="audio-btn" title="Toggle Fullscreen" style="font-size:0.85rem;">⛶</button>
+
+          <div style="display:flex; align-items:center; gap:4px; margin-right:10px;">
+            <span style="font-size:0.75rem; color:#8a8a98;">Scrub:</span>
+            <input type="number" id="scrubValInput" value="5" min="1" style="width:45px; padding:2px 4px; font-size:0.75rem;">
+            <select id="scrubUnitSelect" style="padding:2px 4px; font-size:0.75rem; background:#181820; color:#fff; border:1px solid #333; border-radius:3px;">
+              <option value="s">s</option>
+              <option value="ms">ms</option>
+            </select>
+          </div>
+
+          <input type="range" id="timelineSlider" class="timeline-slider" min="0" max="100" value="0" step="0.1">
+          <span id="timeDisplay" class="time-display">0:00 / 0:00</span>
+        </div>
+
+        <!-- Transcription Progress Overlay -->
+        <div id="progressOverlay" class="progress-overlay">
+          <div id="progressTitle" class="progress-title">Uploading Audio...</div>
+          <div class="progress-track">
+            <div id="progressBar" class="progress-bar"></div>
+          </div>
+          <div id="progressText" class="progress-text">0%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Timestamp Editor (Collapsible) -->
+    <div id="timestampEditorContainer" class="bottom-editor collapsed">
+      <div class="editor-header" onclick="toggleEditor()">
+        <span class="editor-title">SYNCED WORDS & POSITIONS</span>
+        <button class="toggle-btn" id="editorToggleBtn">▲ Expand</button>
+      </div>
+      <div class="editor-content">
+        <!-- Content injected via JS -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Sidebar (Right Side) -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-resizer" id="sidebarResizer"></div>
+
+    <div class="sidebar-content">
+      <h2>Erosion Controls</h2>
+
+      <div class="form-group">
+        <label for="debugMode">
+          <span>Debug Mode (Show Grid)</span>
+          <input type="checkbox" id="debugMode" style="width:auto; margin:0;">
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label for="showAltTips">
+          <span>Show Tooltips</span>
+          <input type="checkbox" id="showAltTips" checked style="width:auto; margin:0;">
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label for="textInput">
+          Prompt reference for grok
+          <span id="micStatus" class="mic-status">Mic Idle</span>
+        </label>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <p style="font-size: 0.7rem; color: #8a8a98; margin: 0; line-height: 1.4;">
+            <span style="color: #00e5ff;">Tip:</span> Paste lyrics reference here for accurate transcription.
+          </p>
+          <span id="charCounter" style="font-size: 0.7rem; color: #8a8a98; font-family: monospace;">
+            0 / 896
+          </span>
+        </div>
+
+        <div style="display:flex; gap:6px; margin-bottom:8px;">
+          <textarea id="textInput" maxlength="896" style="flex:1; min-height: 80px;">lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</textarea>
+          <button id="clearTextBtn" style="background:#3a1a1a; color:#ff7777; border:1px solid #5a2a2a; padding:8px 12px; border-radius:4px; cursor:pointer; font-size:0.75rem; white-space:nowrap;">Clear All</button>
+        </div>
+
+        <div id="charLimitWarning" style="display:none; font-size: 0.7rem; color: #ff7777; margin-bottom: 8px; padding: 4px 8px; background: rgba(255, 119, 119, 0.1); border-radius: 4px;">
+          ⚠️ Character limit reached! Maximum is 896 characters.
+        </div>
+
+        <div id="wordChipsContainer" style="display:flex; flex-wrap:wrap; gap:6px; max-height:120px; overflow-y:auto; background:#09090c; padding:8px; border:1px solid #22222a; border-radius:4px; margin-top:8px;">
+          <!-- Word chips injected via JS -->
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button id="micBtn" class="btn-primary btn-mic">🎙️ Live Mic</button>
+        <button id="triggerBtn" class="btn-primary">Replay Text</button>
+      </div>
+
+      <h2>Groq Whisper Sync</h2>
+
+      <div class="form-group">
+        <label for="audioUpload">Upload Audio File</label>
+        <input type="file" id="audioUpload" accept="audio/*">
+      </div>
+
+      <button id="processAudioBtn" class="btn-primary" style="background:#00e5ff; color:#000;">Sync Audio & Transcribe</button>
+
+      <h2>Typography & FX</h2>
+
+      <div class="form-group">
+        <label for="layoutMode">Layout Mode</label>
+        <select id="layoutMode">
+          <option value="standard" selected>Standard (Top-Down)</option>
+          <option value="subtitle">Subtitle (Experimental - Bottom Anchored)</option>
+          <option value="focused-center">Focused Center (3-Line)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="centerXOffset">Word Gap <span id="centerXOffsetVal">0px</span></label>
+        <input type="range" id="centerXOffset" min="-50" max="200" step="1" value="0">
+      </div>
+
+      <div class="form-group">
+        <label for="fontStyle">Font Style</label>
+        <select id="fontStyle">
+          <option value='"Georgia", "Times New Roman", serif' selected>Serif (Georgia)</option>
+          <option value='"Baskerville", "Garamond", serif'>Serif Classic (Baskerville)</option>
+          <option value='system-ui, -apple-system, sans-serif'>Sans-Serif Clean</option>
+          <option value='"Courier New", monospace'>Monospace Minimal</option>
+          <option value='"Impact", "Arial Black", sans-serif'>Impact (Bold Condensed)</option>
+          <option value='"Arial Black", "Helvetica", sans-serif'>Arial Black (Ultra Bold)</option>
+          <option value='"Helvetica Neue", "Arial", sans-serif' style="font-weight:900;">Helvetica Bold</option>
+          <option value='"Times New Roman", serif' style="font-weight:900;">Times Bold</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="textEffect">Text Effect</label>
+        <select id="textEffect">
+          <option value="none" selected>None (Plain Fade)</option>
+          <option value="dust">Dust Dissolve</option>
+          <option value="glitch">RGB Glitch</option>
+          <option value="blur">Blur Fade</option>
+          <option value="wave">Sine Wave</option>
+          <option value="typewriter">Typewriter</option>
+          <option value="glitch-stack">Glitch Stack (Anaglyph)</option>
+          <option value="cinematic-glitch">Cinematic Glitch (Advanced)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="autoAlign">
+          <span>Auto Align to Canvas</span>
+          <input type="checkbox" id="autoAlign" style="width:auto; margin:0;">
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label for="capitalizeText">
+          <span>Capitalize All Text</span>
+          <input type="checkbox" id="capitalizeText" style="width:auto; margin:0;">
+        </label>
+      </div>
+
+      <div class="btn-group" style="margin-top: 10px;">
+        <button id="resetLayoutBtn" class="btn-primary" style="background:#333; color:#fff; border:1px solid #444; font-size:0.75rem; padding:8px;">
+          ↺ Reset Layout to Center
+        </button>
+      </div>
+
+      <div id="effectSpecificSettings" style="margin-top: 20px; border-top: 1px solid #22222a; padding-top: 15px; display: none;"></div>
+
+      <div class="form-group">
+        <label for="fontScale">Font Scale <span id="fontScaleVal">1.0x</span></label>
+        <input type="range" id="fontScale" min="0.5" max="2.0" step="0.1" value="1.0">
+      </div>
+
+      <div class="form-group">
+        <label for="letterSpacing">Tracking (letter spacing)<span id="trackingVal">12px</span></label>
+        <input type="range" id="letterSpacing" min="4" max="30" step="1" value="12">
+      </div>
+
+      <div class="form-group">
+        <label for="staggerDelay">Text Stagger Delay <span id="staggerVal">0.35s</span></label>
+        <input type="range" id="staggerDelay" min="0.1" max="1.0" step="0.05" value="0.35">
+      </div>
+
+      <div class="form-group">
+        <label for="wordLife">Text Word Duration <span id="wordLifeVal">2.5s</span></label>
+        <input type="range" id="wordLife" min="1.0" max="5.0" step="0.5" value="2.5">
+      </div>
+
+      <div class="form-group">
+        <label for="fadeOutDelay">Fade Out Delay <span id="fadeOutDelayVal">0.0s</span></label>
+        <input type="range" id="fadeOutDelay" min="0.0" max="3.0" step="0.1" value="0.0">
+      </div>
+
+      <div class="form-group">
+        <label for="driftSpeed">Upward Drift Speed <span id="driftVal">0.4</span></label>
+        <input type="range" id="driftSpeed" min="0.1" max="1.5" step="0.1" value="0.4">
+      </div>
+
+      <div class="form-group">
+        <label for="focusedWordsPerLine">Words Per Line <span id="focusedWordsPerLineVal">4</span></label>
+        <input type="range" id="focusedWordsPerLine" min="2" max="8" step="1" value="4">
+      </div>
+    </div>
+  </div>
+
+  <!--
+    Script load order matters: these are plain (non-module) scripts sharing
+    one global scope, so a file may only reference globals declared in a
+    file that loaded *before* it (functions attached to event listeners are
+    the exception — they just need to exist by the time the event fires).
+  -->
+  <script src="js/config.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/canvas.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/text-effects.js"></script>
+  <script src="js/layouts.js"></script>
+  <script src="js/word-manager.js"></script>
+  <script src="js/timestamp-editor.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/ui-handlers.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
