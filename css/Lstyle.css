@@ -257,59 +257,30 @@ canvas {
     0 0 12px rgba(0, 229, 255, 0.897);
 }
 
-/* --- Collapsible Sections --- */
-.collapsible-group {
-  border: 1px solid #22222a;
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 8px;
+/* Advanced Settings Panel */
+.advanced-settings-panel {
+  margin-top: 20px;
+  border-top: 1px solid #22222a;
+  padding-top: 15px;
+  background: rgba(9, 9, 12, 0.5);
+  border-radius: 6px;
+  padding-left: 12px;
+  padding-right: 12px;
+  transition: all 0.3s ease;
 }
 
-.collapsible-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  background: #0e0e12;
-  cursor: pointer;
-  user-select: none;
-  transition: background-color 0.2s ease;
+.advanced-settings-panel[hidden] {
+  display: none;
 }
 
-.collapsible-header:hover {
-  background: #15151a;
-}
-
-.collapse-icon {
-  font-size: 0.65rem;
-  color: #00e5ff;
-  transition: transform 0.3s ease;
-}
-
-.collapsible-header.collapsed .collapse-icon {
-  transform: rotate(-90deg);
-}
-
-.collapsible-header span:last-child {
+.panel-header {
   font-size: 0.75rem;
-  color: #8a8a98;
+  color: #00e5ff;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  flex: 1;
-}
-
-.collapsible-content {
-  padding: 12px;
-  background: #09090c;
-  transition: max-height 0.3s ease, padding 0.3s ease;
-  max-height: 500px;
-  overflow: hidden;
-}
-
-.collapsible-content.collapsed {
-  max-height: 0;
-  padding-top: 0;
-  padding-bottom: 0;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #22222a;
 }
 
 .sidebar h2 {
