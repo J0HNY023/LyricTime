@@ -2,6 +2,9 @@
    timestamp-editor.js — Bottom "Synced Words & Positions" editor UI
    ========================================================================== */
 
+// Store selected word indices for batch operations
+let selectedTimestampIndices = [];
+
 // --- Editor Toggle Logic ---
 window.toggleEditor = function () {
   const editor = document.getElementById('timestampEditorContainer');
@@ -21,6 +24,18 @@ window.toggleEditor = function () {
     drawFrameAtCurrentTime();
   }, 300);
 };
+
+// --- Timestamp Step Change Handler ---
+function updateTimestampSteps() {
+  const stepInput = document.getElementById('timestampStepInput');
+  if (!stepInput) return;
+  const step = stepInput.value || '0.1';
+  
+  // Update all timestamp input steps dynamically
+  document.querySelectorAll('input[type="number"][onchange*="start"], input[type="number"][onchange*="end"]').forEach(input => {
+    input.step = step;
+  });
+}
 
 // --- Dynamic Sidebar Position & Timestamp Editor ---
 function renderTimestampEditorUI() {
@@ -78,18 +93,35 @@ function renderTimestampEditorUI() {
     <!-- Timestamp Increment Settings -->
     <div style="display:flex; align-items:center; gap:8px; background:#0e0e14; padding:8px; border-radius:4px; border:1px solid #22222a; font-size:0.75rem; color:#aaa; flex-wrap: wrap; margin-bottom: 12px;">
       <span>Timestamp Step:</span>
-      <input type="number" id="timestampStepInput" value="0.1" step="0.05" min="0.01" style="width:50px; padding:2px 4px; font-size:0.75rem; background:#09090c; border:1px solid #333; color:#fff; border-radius:3px;">
+      <input type="number" id="timestampStepInput" value="0.1" step="0.05" min="0.01" onchange="updateTimestampSteps()" style="width:50px; padding:2px 4px; font-size:0.75rem; background:#09090c; border:1px solid #333; color:#fff; border-radius:3px;">
       <span>s</span>
       <span style="margin-left:8px;">Use arrows on timestamp inputs to increment by this amount.</span>
+    </div>
+    
+    <!-- Batch Selection Controls -->
+    <div style="display:flex; align-items:center; gap:8px; background:#0e0e14; padding:8px; border-radius:4px; border:1px solid #22222a; font-size:0.75rem; color:#aaa; flex-wrap: wrap; margin-bottom: 12px;">
+      <span>Select:</span>
+      <button onclick="selectAllTimestamps()" style="background:#222230; color:#00e5ff; border:1px solid #333345; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.7rem;">All</button>
+      <button onclick="deselectAllTimestamps()" style="background:#222230; color:#aaa; border:1px solid #333345; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.7rem;">None</button>
+      <span style="margin-left:auto;" id="selectedCountDisplay">0 selected</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; background:#0e0e14; padding:8px; border-radius:4px; border:1px solid #22222a; font-size:0.75rem; color:#aaa; flex-wrap: wrap; margin-bottom: 12px;">
+      <span>Batch Shift Selected:</span>
+      <input type="number" id="batchShiftAmountInput" value="0.1" step="0.05" style="width:45px; padding:2px 4px; font-size:0.75rem; background:#09090c; border:1px solid #333; color:#fff; border-radius:3px;">
+      <span>s</span>
+      <button onclick="batchShiftTimestamps(1)" style="background:#222230; color:#00e5ff; border:1px solid #333345; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.7rem;">+ Shift</button>
+      <button onclick="batchShiftTimestamps(-1)" style="background:#222230; color:#ff7777; border:1px solid #333345; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.7rem;">- Shift</button>
     </div>
 
     <div class="word-editor-list-below">
   `;
 
   activeWordsData.forEach((w, index) => {
+    const isSelected = selectedTimestampIndices.includes(index);
     html += `
-      <div id="word-row-${index}" class="word-editor-row" style="display:flex; flex-direction:column; gap:4px; background:#121218; padding:8px; border-radius:4px; border:1px solid #1a1a24; margin-bottom: 8px;">
+      <div id="word-row-${index}" class="word-editor-row ${isSelected ? 'selected' : ''}" style="display:flex; flex-direction:column; gap:4px; background:#121218; padding:8px; border-radius:4px; border:1px solid ${isSelected ? '#00e5ff' : '#1a1a24'}; margin-bottom: 8px;">
         <div style="display:flex; align-items:center; gap:6px; flex-wrap: wrap;">
+          <input type="checkbox" onchange="toggleTimestampSelection(${index})" ${isSelected ? 'checked' : ''} style="cursor:pointer;">
           <input type="text" value="${w.word.trim()}" onchange="updateWordData(${index}, 'word', this.value)" style="flex:2; min-width:100px; padding:4px; font-size:0.75rem; background:#09090c; border:1px solid #22222a; color:#fff; border-radius:3px;">
           <input type="number" step="0.1" value="${parseFloat(w.start).toFixed(2)}" onchange="updateWordData(${index}, 'start', parseFloat(this.value))" style="width:50px; padding:4px; font-size:0.75rem; background:#09090c; border:1px solid #22222a; color:#fff; border-radius:3px;">
           <span style="font-size:0.7rem; color:#8a8a98;">-</span>
