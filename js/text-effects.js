@@ -2,8 +2,62 @@
    text-effects.js — Text effect rendering logic (dust, glitch, blur, etc.)
    ========================================================================== */
 
-// Effect-specific settings container
-const effectSettingsContainer = document.getElementById('effectSpecificSettings');
+// Effect-specific settings container is imported from config.js
+// const effectSettingsContainer is defined in config.js line 73
+
+/**
+ * Render a word with the appropriate effect
+ * This is the main entry point called by main.js and layouts.js
+ * @param {Object} wordObj - Word object with position and timing data
+ * @param {number} activeTime - Current time in seconds
+ * @param {number} fontSize - Font size in pixels
+ * @param {string} fontFamily - Font family string
+ * @param {number} tracking - Letter spacing in pixels
+ * @param {number} driftSpeed - Drift speed multiplier
+ * @param {number} [animX] - Optional animated X position (for layout transitions)
+ * @param {number} [animY] - Optional animated Y position (for layout transitions)
+ * @param {number} [opacity] - Optional opacity override (0-1)
+ */
+function renderWord(wordObj, activeTime, fontSize, fontFamily, tracking, driftSpeed, animX, animY, opacity) {
+  const { text, x, y, startTime, duration, color } = wordObj;
+  
+  // Use animated position if provided, otherwise use base position
+  const renderX = animX !== undefined ? animX : x;
+  const renderY = animY !== undefined ? animY : y;
+  
+  // Calculate progress (0-1) based on timing
+  const elapsed = activeTime - startTime;
+  const progress = Math.max(0, Math.min(1, elapsed / duration));
+  
+  // Apply drift if in audio sync mode
+  let finalY = renderY;
+  if (isAudioSyncMode && driftSpeed > 0) {
+    finalY = renderY - (elapsed * driftSpeed * 10);
+  }
+  
+  // Get the current effect type
+  const effect = textEffectInput ? textEffectInput.value : 'none';
+  
+  // Create a temporary word object for the effect renderer
+  const tempWordObj = {
+    ...wordObj,
+    x: renderX,
+    y: finalY,
+    fontSize,
+    fontFamily,
+    color: color || '#ffffff'
+  };
+  
+  // Apply custom opacity if provided
+  if (opacity !== undefined) {
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    drawWordWithEffect(ctx, tempWordObj, progress, effect);
+    ctx.restore();
+  } else {
+    drawWordWithEffect(ctx, tempWordObj, progress, effect);
+  }
+}
 
 // Cinematic Glitch configuration
 let cinematicConfig = {
