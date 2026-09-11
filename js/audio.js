@@ -93,11 +93,19 @@ loopBtn.addEventListener('click', () => {
 });
 
 // --- Timeline Controls ---
-playPauseBtn.addEventListener('click', () => {
+playPauseBtn.addEventListener('click', async () => {
   if (audioElement.paused) {
-    audioElement.play();
-    playPauseBtn.textContent = '❚❚';
-    animationFrame = requestAnimationFrame(animate);
+    try {
+      await audioElement.play();
+      playPauseBtn.textContent = '❚❚';
+      animationFrame = requestAnimationFrame(animate);
+    } catch (err) {
+      if (err.name === 'NotAllowedError') {
+        console.warn('Playback requires user interaction first.');
+      } else {
+        console.error('Play error:', err);
+      }
+    }
   } else {
     audioElement.pause();
     playPauseBtn.textContent = '▶';
@@ -135,12 +143,20 @@ audioElement.addEventListener('timeupdate', () => {
   }
 });
 
-audioElement.addEventListener('ended', () => {
+audioElement.addEventListener('ended', async () => {
   if (isLooping && isAudioSyncMode) {
     audioElement.currentTime = 0;
-    audioElement.play();
-    playPauseBtn.textContent = '❚❚';
-    animationFrame = requestAnimationFrame(animate);
+    try {
+      await audioElement.play();
+      playPauseBtn.textContent = '❚❚';
+      animationFrame = requestAnimationFrame(animate);
+    } catch (err) {
+      if (err.name === 'NotAllowedError') {
+        console.warn('Autoplay on loop requires user interaction.');
+      } else {
+        console.error('Play error on loop:', err);
+      }
+    }
   } else {
     playPauseBtn.textContent = '▶';
   }
@@ -275,9 +291,18 @@ processAudioBtn.addEventListener('click', async () => {
       audioControls.classList.add('active');
       cancelAnimationFrame(animationFrame);
       audioElement.currentTime = 0;
-      await audioElement.play();
-      playPauseBtn.textContent = '❚❚';
-      animationFrame = requestAnimationFrame(animate);
+      try {
+        await audioElement.play();
+        playPauseBtn.textContent = '❚❚';
+        animationFrame = requestAnimationFrame(animate);
+      } catch (err) {
+        if (err.name === 'NotAllowedError') {
+          console.warn('Autoplay after transcription requires user interaction. Click Play to start.');
+          playPauseBtn.textContent = '▶';
+        } else {
+          console.error('Play error after transcription:', err);
+        }
+      }
 
       const editorContainer = document.getElementById('timestampEditorContainer');
       if (editorContainer) {
