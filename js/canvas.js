@@ -204,9 +204,10 @@ function drawWordHighlight(obj, activeTime, driftSpeed, fontSize) {
   ctx.strokeRect(x, y, width, height);
   
   // Draw rotation handle icon at top-center of selected word (centered on border)
+  // Adjusted: moved right by 50% and up by 5%
   const handleSize = 12;
-  const handleY = y - handleSize - 6;
-  const centerX = obj.x; // Center of the rotated box
+  const handleY = y - handleSize - 6 - (height * 0.05); // Move up by 5% of height
+  const centerX = obj.x + (width * 0.5); // Move right by 50% of width
   
   ctx.fillStyle = '#00e5ff';
   ctx.beginPath();
