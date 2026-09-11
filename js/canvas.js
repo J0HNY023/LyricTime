@@ -187,7 +187,15 @@ function drawWordHighlight(obj, activeTime, driftSpeed, fontSize) {
   const width = scaledWidth + (padding * 2);
   const height = scaledFontSize + (padding * 2);
 
+  // Get rotation value (default to 0 if not set)
+  const rotation = obj.rotation || 0;
+
   ctx.save();
+  // Apply rotation around the word's center
+  ctx.translate(obj.x, currentY);
+  ctx.rotate(rotation * Math.PI / 180);
+  ctx.translate(-obj.x, -currentY);
+
   ctx.fillStyle = 'rgba(0, 229, 255, 0.15)';
   ctx.fillRect(x, y, width, height);
   ctx.strokeStyle = '#00e5ff';

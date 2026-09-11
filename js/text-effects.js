@@ -380,3 +380,10 @@ textEffectInput.addEventListener('change', (e) => {
   saveState();
   if (!isAudioSyncMode) startAnimation();
 });
+
+// --- Initialize Cinematic UI on Page Load if Already Selected ---
+// This ensures that when the page is reloaded with cinematic-glitch active,
+// the settings panel is displayed immediately.
+if (textEffectInput && textEffectInput.value === 'cinematic-glitch') {
+  buildCinematicUI();
+}
