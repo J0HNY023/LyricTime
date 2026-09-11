@@ -13,9 +13,18 @@ document.addEventListener('keyup', (e) => {
   if (e.key === 'Control') isCtrlDown = false;
 });
 
+const wordCounter = document.getElementById('wordCounter');
+
 function updateCharCounter() {
   const currentLength = textInput.value.length;
   charCounter.textContent = `${currentLength} / ${MAX_CHARS}`;
+  
+  // Update word counter
+  const words = textInput.value.trim().split(/\s+/).filter(w => w.length > 0);
+  const wordCount = words.length;
+  if (wordCounter) {
+    wordCounter.textContent = wordCount;
+  }
 
   if (currentLength > MAX_CHARS * 0.9) {
     charCounter.style.color = '#ff7777';
@@ -32,22 +41,22 @@ function updateCharCounter() {
 // Combined input listener for the text area: cleans line breaks, enforces
 // the char limit, and keeps the counter/chips/labels/saved-state in sync.
 textInput.addEventListener('input', () => {
-  // 1. Remove all line breaks and replace them with a single space
-  let cleanText = textInput.value.replace(/[\r\n]+/g, ' ');
+  // For single-line input, just ensure no line breaks slip in
+  let cleanText = textInput.value.replace(/[\r\n]+/g, '');
   if (textInput.value !== cleanText) {
     textInput.value = cleanText;
   }
 
-  // 2. Enforce character limit
+  // Enforce character limit
   if (textInput.value.length > MAX_CHARS) {
     textInput.value = textInput.value.slice(0, MAX_CHARS);
   }
 
-  // 3. Update counter and chips
+  // Update counter and chips
   updateCharCounter();
   renderWordChips();
 
-  // 4. Save state
+  // Save state
   updateLabels();
   saveState();
 });
@@ -160,7 +169,30 @@ window.addEventListener('resize', () => {
 
 // --- Enhanced Keyboard Controls ---
 document.addEventListener('keydown', (e) => {
-  // Alt + A to Select/Deselect All
+  // Ctrl + A to Select/Deselect All (works on canvas, not in text inputs)
+  if (e.ctrlKey && e.code === 'KeyA') {
+    const activeEl = document.activeElement;
+    const isTextInput = activeEl && (
+      activeEl.tagName === 'TEXTAREA' ||
+      (activeEl.tagName === 'INPUT' && ['text', 'number', 'password', 'search'].includes(activeEl.type))
+    );
+    
+    // Only select all words if NOT focused on a text input
+    if (!isTextInput) {
+      e.preventDefault();
+      isAllSelected = !isAllSelected;
+
+      if (isAllSelected) {
+        selectedWordIndices = wordObjects.map((_, i) => i);
+      } else {
+        selectedWordIndices = [];
+      }
+      drawFrameAtCurrentTime();
+      return;
+    }
+  }
+  
+  // Alt + A fallback for select all
   if (e.altKey && e.code === 'KeyA') {
     e.preventDefault();
     isAllSelected = !isAllSelected;
@@ -358,8 +390,16 @@ canvas.addEventListener('pointerdown', (e) => {
       }];
     }
 
-    if (isAltDown) { isResizing = true; resizeStartX = coords.x; }
-    else { isDragging = true; }
+    // Check for rotation mode (Alt + Shift), resize mode (Alt only), or drag mode
+    if (isAltDown && e.shiftKey) {
+      isRotating = true;
+      rotateStartX = coords.x;
+    } else if (isAltDown) {
+      isResizing = true;
+      resizeStartX = coords.x;
+    } else {
+      isDragging = true;
+    }
   }
   else if (selectedWordIndices.length > 0) {
     const groupBox = getGroupBoundingBox(selectedWordIndices);
@@ -372,8 +412,16 @@ canvas.addEventListener('pointerdown', (e) => {
       dragStartStates = selectedWordIndices.map(idx => ({
         idx: idx, startX: wordObjects[idx].x, startY: wordObjects[idx].y, startScale: wordObjects[idx].scale || 1.0
       }));
-      if (isAltDown) { isResizing = true; resizeStartX = coords.x; }
-      else { isDragging = true; }
+      // Check for rotation mode (Alt + Shift), resize mode (Alt only), or drag mode
+      if (isAltDown && e.shiftKey) {
+        isRotating = true;
+        rotateStartX = coords.x;
+      } else if (isAltDown) {
+        isResizing = true;
+        resizeStartX = coords.x;
+      } else {
+        isDragging = true;
+      }
     } else {
       selectedWordIndices = [];
       isAllSelected = false;
@@ -452,6 +500,21 @@ canvas.addEventListener('pointermove', (e) => {
       canvas.style.cursor = 'grabbing';
       if (isAltDown) canvasTooltip.textContent = 'Moving Group...';
     }
+    return;
+  }
+  
+  // 1b. Active rotation (Shift + Alt + Drag horizontally)
+  if (draggedWordIndex !== -1 && isAltDown && e.shiftKey) {
+    const dx = coords.x - dragStartX;
+    dragStartStates.forEach(state => {
+      let newRotation = (dx * 0.5) % 360; // 0.5 degrees per pixel
+      wordObjects[state.idx].rotation = newRotation;
+      if (wordObjects[state.idx].dataIndex !== -1) {
+        activeWordsData[wordObjects[state.idx].dataIndex].rotation = newRotation;
+      }
+    });
+    drawFrameAtCurrentTime();
+    canvasTooltip.textContent = `Rotating: ${Math.round((dx * 0.5) % 360)}°`;
     return;
   }
 

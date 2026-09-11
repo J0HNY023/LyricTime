@@ -74,6 +74,14 @@ function renderTimestampEditorUI() {
       <button onclick="shiftAllTimestamps(-1)" style="background:#222230; color:#ff7777; border:1px solid #333345; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.7rem;">- Shift</button>
       <button onclick="applyTimestampEdits()" class="btn-primary" style="margin:0 0 0 auto; padding:4px 12px; font-size:0.7rem; background:#8a2be2; color:#fff;">Apply & Sort</button>
     </div>
+    
+    <!-- Timestamp Increment Settings -->
+    <div style="display:flex; align-items:center; gap:8px; background:#0e0e14; padding:8px; border-radius:4px; border:1px solid #22222a; font-size:0.75rem; color:#aaa; flex-wrap: wrap; margin-bottom: 12px;">
+      <span>Timestamp Step:</span>
+      <input type="number" id="timestampStepInput" value="0.1" step="0.05" min="0.01" style="width:50px; padding:2px 4px; font-size:0.75rem; background:#09090c; border:1px solid #333; color:#fff; border-radius:3px;">
+      <span>s</span>
+      <span style="margin-left:8px;">Use arrows on timestamp inputs to increment by this amount.</span>
+    </div>
 
     <div class="word-editor-list-below">
   `;
