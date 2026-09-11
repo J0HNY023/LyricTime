@@ -520,6 +520,9 @@ canvas.addEventListener('pointerdown', (e) => {
         startY: wordObjects[hitIndex].y,
         startScale: wordObjects[hitIndex].scale || 1.0
       }];
+      
+      // Sync rotation slider with new selection
+      syncRotationSlider();
     }
 
     // Check for rotation mode (Ctrl + Alt), resize mode (Alt only), or drag mode
@@ -565,6 +568,9 @@ canvas.addEventListener('pointerdown', (e) => {
     isAllSelected = false;
     drawFrameAtCurrentTime();
   }
+  
+  // Sync rotation slider with new selection
+  syncRotationSlider();
   
   // Handle double-click to edit text in focused-center layout
   if (layoutModeInput.value === 'focused-center' && hitIndex !== -1) {
@@ -821,6 +827,9 @@ function endDrag(e) {
 
       selectedWordIndices = newSelection;
       isAllSelected = false;
+      
+      // Sync rotation slider with new selection
+      syncRotationSlider();
     }
 
     drawFrameAtCurrentTime();
@@ -947,9 +956,71 @@ canvas.addEventListener('dblclick', (e) => {
   input.addEventListener('blur', commitEdit);
 });
 
+// --- Undo/Redo Buttons ---
+undoBtn.addEventListener('click', () => {
+  undo();
+});
+
+redoBtn.addEventListener('click', () => {
+  redo();
+});
+
+// --- Rotation Slider ---
+rotationSlider.addEventListener('input', () => {
+  const rotation = parseFloat(rotationSlider.value);
+  rotationVal.textContent = `${Math.round(rotation)}°`;
+  
+  // Apply rotation to all selected words
+  if (selectedWordIndices.length > 0) {
+    selectedWordIndices.forEach(idx => {
+      wordObjects[idx].rotation = rotation;
+      if (wordObjects[idx].dataIndex !== -1) {
+        activeWordsData[wordObjects[idx].dataIndex].rotation = rotation;
+      }
+    });
+    saveState();
+    drawFrameAtCurrentTime();
+  }
+});
+
+// Sync rotation slider with selected word's rotation when selection changes
+function syncRotationSlider() {
+  if (selectedWordIndices.length === 1) {
+    const idx = selectedWordIndices[0];
+    const rotation = wordObjects[idx].rotation || 0;
+    rotationSlider.value = rotation;
+    rotationVal.textContent = `${Math.round(rotation)}°`;
+  } else if (selectedWordIndices.length > 1) {
+    // Multiple selections - show average or reset
+    rotationSlider.value = 0;
+    rotationVal.textContent = 'Multiple';
+  } else {
+    rotationSlider.value = 0;
+    rotationVal.textContent = '0°';
+  }
+}
+
+// --- Collapsible Sections Toggle ---
+function toggleCollapse(header) {
+  const content = header.nextElementSibling;
+  const isCollapsed = content.classList.contains('collapsed');
+  
+  if (isCollapsed) {
+    content.classList.remove('collapsed');
+    header.classList.remove('collapsed');
+  } else {
+    content.classList.add('collapsed');
+    header.classList.add('collapsed');
+  }
+}
+
+// Make toggleCollapse available globally for onclick handlers
+window.toggleCollapse = toggleCollapse;
+
 // --- Sidebar Manual Resize Logic ---
+let isResizingSidebar = false;
+
 if (sidebar && sidebarResizer) {
-  let isResizingSidebar = false;
 
   sidebarResizer.addEventListener('pointerdown', (e) => {
     isResizingSidebar = true;
