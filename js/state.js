@@ -17,6 +17,124 @@ let isAudioSyncMode = false;
 let isSeeking = false;
 let audioElement = new Audio();
 
+// --- Undo/Redo History ---
+let undoStack = [];
+let redoStack = [];
+const MAX_HISTORY = 50;
+
+function pushToUndoStack() {
+  const stateSnapshot = {
+    textInput: textInput.value,
+    activeWordsData: JSON.parse(JSON.stringify(activeWordsData)),
+    layoutMode: layoutModeInput.value,
+    fontScale: fontScaleInput.value,
+    fontStyle: fontStyleInput.value,
+    tracking: trackingInput.value,
+    centerXOffset: centerXOffsetInput.value,
+    staggerDelay: staggerInput.value,
+    wordLife: wordLifeInput.value,
+    fadeOutDelay: fadeOutDelayInput.value,
+    driftSpeed: driftInput.value,
+    textEffect: textEffectInput.value
+  };
+  
+  undoStack.push(stateSnapshot);
+  if (undoStack.length > MAX_HISTORY) {
+    undoStack.shift();
+  }
+  // Clear redo stack when new action is performed
+  redoStack = [];
+}
+
+function undo() {
+  if (undoStack.length === 0) return;
+  
+  // Push current state to redo stack
+  const currentState = {
+    textInput: textInput.value,
+    activeWordsData: JSON.parse(JSON.stringify(activeWordsData)),
+    layoutMode: layoutModeInput.value,
+    fontScale: fontScaleInput.value,
+    fontStyle: fontStyleInput.value,
+    tracking: trackingInput.value,
+    centerXOffset: centerXOffsetInput.value,
+    staggerDelay: staggerInput.value,
+    wordLife: wordLifeInput.value,
+    fadeOutDelay: fadeOutDelayInput.value,
+    driftSpeed: driftInput.value,
+    textEffect: textEffectInput.value
+  };
+  redoStack.push(currentState);
+  
+  // Restore previous state
+  const prevState = undoStack.pop();
+  restoreStateFromSnapshot(prevState);
+}
+
+function redo() {
+  if (redoStack.length === 0) return;
+  
+  // Push current state to undo stack
+  const currentState = {
+    textInput: textInput.value,
+    activeWordsData: JSON.parse(JSON.stringify(activeWordsData)),
+    layoutMode: layoutModeInput.value,
+    fontScale: fontScaleInput.value,
+    fontStyle: fontStyleInput.value,
+    tracking: trackingInput.value,
+    centerXOffset: centerXOffsetInput.value,
+    staggerDelay: staggerInput.value,
+    wordLife: wordLifeInput.value,
+    fadeOutDelay: fadeOutDelayInput.value,
+    driftSpeed: driftInput.value,
+    textEffect: textEffectInput.value
+  };
+  undoStack.push(currentState);
+  
+  // Restore next state
+  const nextState = redoStack.pop();
+  restoreStateFromSnapshot(nextState);
+}
+
+function restoreStateFromSnapshot(snapshot) {
+  textInput.value = snapshot.textInput;
+  activeWordsData = JSON.parse(JSON.stringify(snapshot.activeWordsData));
+  layoutModeInput.value = snapshot.layoutMode;
+  fontScaleInput.value = snapshot.fontScale;
+  fontStyleInput.value = snapshot.fontStyle;
+  trackingInput.value = snapshot.tracking;
+  centerXOffsetInput.value = snapshot.centerXOffset;
+  staggerInput.value = snapshot.staggerDelay;
+  wordLifeInput.value = snapshot.wordLife;
+  fadeOutDelayInput.value = snapshot.fadeOutDelay;
+  driftInput.value = snapshot.driftSpeed;
+  textEffectInput.value = snapshot.textEffect;
+  
+  // Update UI labels
+  updateLabels();
+  fontScaleVal.textContent = `${parseFloat(fontScaleInput.value).toFixed(1)}x`;
+  staggerVal.textContent = `${staggerInput.value}s`;
+  wordLifeVal.textContent = `${wordLifeInput.value}s`;
+  fadeOutDelayVal.textContent = `${fadeOutDelayInput.value}s`;
+  trackingVal.textContent = `${trackingInput.value}px`;
+  driftVal.textContent = driftInput.value;
+  centerXOffsetVal.textContent = `${centerXOffsetInput.value}px`;
+  
+  // Rebuild and redraw
+  if (isAudioSyncMode) {
+    buildWordStructuresFromAudio(activeWordsData);
+  } else {
+    buildWordStructures();
+  }
+  drawFrameAtCurrentTime();
+  
+  // Update char counter
+  updateCharCounter();
+  renderWordChips();
+  
+  saveState();
+}
+
 // --- Canvas Dragging State ---
 let draggedWordIndex = -1;
 let dragStartX = 0;

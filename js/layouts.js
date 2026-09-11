@@ -301,14 +301,10 @@ function renderFocusedCenter(elapsed, fontSize, fontStyle, tracking, driftSpeed)
 layoutModeInput.addEventListener('change', () => {
   saveState();
   
-  // Show/hide Word Gap setting based on layout mode
+  // Word Gap setting now visible for all layouts
   const wordGapContainer = document.getElementById('wordGapContainer');
   if (wordGapContainer) {
-    if (layoutModeInput.value === 'focused-center') {
-      wordGapContainer.style.display = 'block';
-    } else {
-      wordGapContainer.style.display = 'none';
-    }
+    wordGapContainer.style.display = 'block';
   }
   
   if (isAudioSyncMode) {
