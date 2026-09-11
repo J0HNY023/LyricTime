@@ -37,6 +37,10 @@ function buildWordStructures() {
     currentY = canvas.height - padding - (fontSize * 2);
   }
 
+  // Add word gap for all layout modes
+  const wordGap = parseFloat(centerXOffsetInput.value) || 0;
+  const effectiveSpaceWidth = spaceWidth + wordGap;
+
   rawLines.forEach((lineText, lineIndex) => {
     const words = lineText.trim().split(/\s+/).filter(w => w.length > 0);
     let currentX = padding;
@@ -90,7 +94,7 @@ function buildWordStructures() {
         targetY: currentY
       });
 
-      currentX += wWidth + spaceWidth;
+      currentX += wWidth + effectiveSpaceWidth;
       globalWordIndex++;
       wordIdx++;
     });
