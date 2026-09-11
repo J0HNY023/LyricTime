@@ -61,13 +61,8 @@ window.batchShiftTimestamps = function(direction) {
   buildWordStructuresFromAudio(activeWordsData);
   drawFrameAtCurrentTime();
   
-  // Restore the shift amount value after re-render
-  setTimeout(() => {
-    const restoredShiftInput = document.getElementById('batchShiftAmountInput');
-    if (restoredShiftInput) {
-      restoredShiftInput.value = Math.abs(amount).toFixed(2);
-    }
-  }, 0);
+  // Save the shift amount to localStorage for persistence
+  localStorage.setItem('batchShiftAmount', Math.abs(amount).toFixed(2));
 };
 
 // --- Editor Toggle Logic ---
@@ -175,7 +170,7 @@ function renderTimestampEditorUI() {
       <!-- Batch Shift Selected -->
       <div style="display:flex; align-items:center; gap:6px; flex-wrap: wrap;">
         <span title="Shift only selected words">Batch Shift:</span>
-        <input type="number" id="batchShiftAmountInput" value="0.1" step="0.05" style="width:45px; padding:2px 4px; font-size:0.75rem; background:#09090c; border:1px solid #333; color:#fff; border-radius:3px;">
+        <input type="number" id="batchShiftAmountInput" value="${localStorage.getItem('batchShiftAmount') || '0.1'}" step="0.05" style="width:45px; padding:2px 4px; font-size:0.75rem; background:#09090c; border:1px solid #333; color:#fff; border-radius:3px;">
         <span>s</span>
         <button onclick="batchShiftTimestamps(1)" title="Shift selected words forward" style="background:#222230; color:#00e5ff; border:1px solid #333345; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.7rem;">+</button>
         <button onclick="batchShiftTimestamps(-1)" title="Shift selected words backward" style="background:#222230; color:#ff7777; border:1px solid #333345; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.7rem;">-</button>
