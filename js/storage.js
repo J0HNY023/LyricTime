@@ -3,6 +3,47 @@
    (IndexedDB)
    ========================================================================== */
 
+/**
+ * Validate and sanitize data from localStorage before use
+ * @param {any} data - Data to validate
+ * @param {string} expectedType - Expected type of the data
+ * @returns {any} Sanitized data or default value
+ */
+function validateLocalStorageData(data, expectedType, defaultValue = null) {
+  if (data === null || data === undefined) {
+    return defaultValue;
+  }
+  
+  // Type validation
+  if (expectedType === 'string') {
+    if (typeof data !== 'string') return defaultValue;
+    // Sanitize string data using DOMPurify if available
+    return typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(data) : data;
+  }
+  
+  if (expectedType === 'number') {
+    if (typeof data !== 'number' || isNaN(data)) return defaultValue;
+    return data;
+  }
+  
+  if (expectedType === 'boolean') {
+    return data === true || data === false ? data : defaultValue;
+  }
+  
+  if (expectedType === 'array') {
+    if (!Array.isArray(data)) return defaultValue;
+    // Recursively validate array items
+    return data.map(item => validateLocalStorageData(item, 'object', null)).filter(i => i !== null);
+  }
+  
+  if (expectedType === 'object') {
+    if (typeof data !== 'object' || Array.isArray(data)) return defaultValue;
+    return data;
+  }
+  
+  return defaultValue;
+}
+
 // --- IndexedDB Audio Storage Helpers ---
 function openAudioDB() {
   return new Promise((resolve, reject) => {
@@ -77,54 +118,73 @@ async function loadState() {
   const saved = localStorage.getItem('dust_animation_state');
   if (saved) {
     try {
-      const state = JSON.parse(saved);
-      if (state.text !== undefined) textInput.value = state.text;
-      if (state.fontStyle !== undefined) fontStyleInput.value = state.fontStyle;
-      if (state.fontScale !== undefined) fontScaleInput.value = state.fontScale;
-      if (state.staggerDelay !== undefined) staggerInput.value = state.staggerDelay;
-      if (state.wordLife !== undefined) wordLifeInput.value = state.wordLife;
-      if (state.fadeOutDelay !== undefined) fadeOutDelayInput.value = state.fadeOutDelay;
-      if (state.letterSpacing !== undefined) trackingInput.value = state.letterSpacing;
-      if (state.driftSpeed !== undefined) driftInput.value = state.driftSpeed;
-      if (state.isAudioSyncMode !== undefined) isAudioSyncMode = state.isAudioSyncMode;
-      if (state.autoAlign !== undefined) autoAlignInput.checked = state.autoAlign;
-      if (state.capitalizeText !== undefined) capitalizeTextInput.checked = state.capitalizeText;
-      if (state.layoutMode !== undefined) layoutModeInput.value = state.layoutMode;
-
-      if (state.centerXOffset !== undefined) {
-        centerXOffsetInput.value = state.centerXOffset;
-        centerXOffsetVal.textContent = `${state.centerXOffset}px`;
+      const parsedState = JSON.parse(saved);
+      
+      // Validate the state object structure
+      if (typeof parsedState !== 'object' || parsedState === null || Array.isArray(parsedState)) {
+        console.warn('Invalid state structure from localStorage, resetting to defaults');
+        return;
       }
       
-
+      const state = parsedState;
+      
+      // Validate and sanitize string fields before use
+      if (state.text !== undefined) {
+        textInput.value = validateLocalStorageData(state.text, 'string', '');
+      }
+      if (state.fontStyle !== undefined) fontStyleInput.value = validateLocalStorageData(state.fontStyle, 'string', fontStyleInput.value);
+      if (state.fontScale !== undefined) fontScaleInput.value = validateLocalStorageData(state.fontScale, 'string', fontScaleInput.value);
+      if (state.staggerDelay !== undefined) staggerInput.value = validateLocalStorageData(state.staggerDelay, 'string', staggerInput.value);
+      if (state.wordLife !== undefined) wordLifeInput.value = validateLocalStorageData(state.wordLife, 'string', wordLifeInput.value);
+      if (state.fadeOutDelay !== undefined) fadeOutDelayInput.value = validateLocalStorageData(state.fadeOutDelay, 'string', fadeOutDelayInput.value);
+      if (state.letterSpacing !== undefined) trackingInput.value = validateLocalStorageData(state.letterSpacing, 'string', trackingInput.value);
+      if (state.driftSpeed !== undefined) driftInput.value = validateLocalStorageData(state.driftSpeed, 'string', driftInput.value);
+      if (state.layoutMode !== undefined) layoutModeInput.value = validateLocalStorageData(state.layoutMode, 'string', layoutModeInput.value);
+      if (state.textEffect !== undefined) textEffectInput.value = validateLocalStorageData(state.textEffect, 'string', textEffectInput.value);
+      if (state.scrubVal !== undefined) scrubValInput.value = validateLocalStorageData(state.scrubVal, 'string', scrubValInput.value);
+      if (state.scrubUnit !== undefined) scrubUnitSelect.value = validateLocalStorageData(state.scrubUnit, 'string', scrubUnitSelect.value);
+      if (state.centerXOffset !== undefined) {
+        centerXOffsetInput.value = validateLocalStorageData(state.centerXOffset, 'string', '0');
+        centerXOffsetVal.textContent = `${centerXOffsetInput.value}px`;
+      }
+      
+      // Validate boolean fields
+      if (state.isAudioSyncMode !== undefined) isAudioSyncMode = validateLocalStorageData(state.isAudioSyncMode, 'boolean', false);
+      if (state.autoAlign !== undefined) autoAlignInput.checked = validateLocalStorageData(state.autoAlign, 'boolean', false);
+      if (state.capitalizeText !== undefined) capitalizeTextInput.checked = validateLocalStorageData(state.capitalizeText, 'boolean', false);
       if (state.debugMode !== undefined) {
-        debugModeInput.checked = state.debugMode;
-        isDebugMode = state.debugMode;
+        debugModeInput.checked = validateLocalStorageData(state.debugMode, 'boolean', false);
+        isDebugMode = validateLocalStorageData(state.debugMode, 'boolean', false);
       }
       if (state.showAltTips !== undefined) {
-        showAltTipsInput.checked = state.showAltTips;
-        showAltTips = state.showAltTips;
+        showAltTipsInput.checked = validateLocalStorageData(state.showAltTips, 'boolean', true);
+        showAltTips = validateLocalStorageData(state.showAltTips, 'boolean', true);
       }
-
-      if (state.activeWordsData && state.activeWordsData.length > 0) {
-        activeWordsData = state.activeWordsData;
-        renderTimestampEditorUI();
-      }
-      if (state.textEffect !== undefined) textEffectInput.value = state.textEffect;
-      if (state.scrubVal !== undefined) scrubValInput.value = state.scrubVal;
-      if (state.scrubUnit !== undefined) scrubUnitSelect.value = state.scrubUnit;
       if (state.isLooping !== undefined) {
-        isLooping = state.isLooping;
+        isLooping = validateLocalStorageData(state.isLooping, 'boolean', false);
         updateLoopButtonUI();
       }
-      if (state.cinematicConfig) {
+      
+      // Validate array data (activeWordsData)
+      if (state.activeWordsData && Array.isArray(state.activeWordsData)) {
+        activeWordsData = state.activeWordsData.filter(item => 
+          item && typeof item === 'object' && 
+          typeof item.word === 'string' && 
+          typeof item.start === 'number' && 
+          typeof item.end === 'number'
+        );
+        if (activeWordsData.length > 0) {
+          renderTimestampEditorUI();
+        }
+      }
+      
+      // Validate cinematic config object
+      if (state.cinematicConfig && typeof state.cinematicConfig === 'object' && !Array.isArray(state.cinematicConfig)) {
         cinematicConfig = state.cinematicConfig;
-        // Only rebuild UI if cinematic-glitch is the selected effect
         if (state.textEffect === 'cinematic-glitch') {
           textEffectInput.value = 'cinematic-glitch';
           buildCinematicUI();
         } else {
-          // Hide cinematic settings panel if not selected
           const existingPanel = document.querySelector('.cinematic-config-panel');
           if (existingPanel) {
             existingPanel.style.display = 'none';
