@@ -1,1 +1,1 @@
-(js/layouts.js, js/timestamp-editor.js)
+(js/layouts.js, js/storage.js, js/timestamp-editor.js, js/ui-handlers.js, js/word-manager.js)

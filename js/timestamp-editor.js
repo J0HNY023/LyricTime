@@ -19,11 +19,18 @@ window.toggleTimestampSelection = function(index) {
 window.selectAllTimestamps = function() {
   selectedTimestampIndices = activeWordsData.map((_, i) => i);
   renderTimestampEditorUI();
+  // Also sync with canvas selection
+  selectedWordIndices = [...selectedTimestampIndices];
+  drawFrameAtCurrentTime();
 };
 
 window.deselectAllTimestamps = function() {
   selectedTimestampIndices = [];
   renderTimestampEditorUI();
+  // Also sync with canvas selection
+  selectedWordIndices = [];
+  isAllSelected = false;
+  drawFrameAtCurrentTime();
 };
 
 window.batchShiftTimestamps = function(direction) {
@@ -47,6 +54,14 @@ window.batchShiftTimestamps = function(direction) {
   renderTimestampEditorUI();
   buildWordStructuresFromAudio(activeWordsData);
   drawFrameAtCurrentTime();
+  
+  // Restore the shift amount value after re-render
+  setTimeout(() => {
+    const restoredShiftInput = document.getElementById('batchShiftAmountInput');
+    if (restoredShiftInput) {
+      restoredShiftInput.value = Math.abs(amount).toFixed(2);
+    }
+  }, 0);
 };
 
 // --- Editor Toggle Logic ---

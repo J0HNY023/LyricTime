@@ -148,6 +148,9 @@ window.applyTimestampEdits = function () {
   saveState();
 
   renderTimestampEditorUI();
+  
+  // Rebuild word structures to apply any text changes
+  buildWordStructuresFromAudio(activeWordsData);
   drawFrameAtCurrentTime();
 
   if (isAudioSyncMode && !audioElement.paused) {
