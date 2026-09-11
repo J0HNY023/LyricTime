@@ -96,11 +96,6 @@ async function loadState() {
         centerXOffsetVal.textContent = `${state.centerXOffset}px`;
       }
       
-      // Word Gap setting visible for all layouts
-      const wordGapContainer = document.getElementById('wordGapContainer');
-      if (wordGapContainer) {
-        wordGapContainer.style.display = 'block';
-      }
 
       if (state.debugMode !== undefined) {
         debugModeInput.checked = state.debugMode;

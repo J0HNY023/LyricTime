@@ -301,12 +301,9 @@ function renderFocusedCenter(elapsed, fontSize, fontStyle, tracking, driftSpeed)
 layoutModeInput.addEventListener('change', () => {
   saveState();
   
-  // Word Gap setting now visible for all layouts
-  const wordGapContainer = document.getElementById('wordGapContainer');
-  if (wordGapContainer) {
-    wordGapContainer.style.display = 'block';
-  }
   
+  // Word Gap setting is now always visible for all layouts (no need to toggle)
+  // The centerXOffset slider applies to all layout modes
   if (isAudioSyncMode) {
     buildWordStructuresFromAudio(activeWordsData);
   } else {
