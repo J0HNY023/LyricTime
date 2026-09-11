@@ -76,11 +76,38 @@ const effectSettingsContainer = document.getElementById('effectSpecificSettings'
 const sidebar = document.getElementById('sidebar');
 const sidebarResizer = document.getElementById('sidebarResizer');
 
-// NOTE: There is a "Words Per Line" slider in the HTML (#focusedWordsPerLine)
-// but nothing in the codebase reads its value during layout — it currently
-// has no effect. Left as-is since wiring it up would change behavior;
-// flagging here so it's not mistaken for dead code you forgot to remove.
-
 // --- Animation Constants ---
 // Smooth easing factor (0.0–1.0, lower = smoother/slower)
 const LAYOUT_EASE = 0.12;
+
+// --- Cache for computed values ---
+const cache = {
+  fontSize: null,
+  lastFontSizeTime: 0,
+  CACHE_DURATION: 100 // ms to cache computed values
+};
+
+/**
+ * Get cached computed font size to avoid repeated calculations
+ * @returns {number} Computed font size in pixels
+ */
+function getCachedFontSize() {
+  const now = performance.now();
+  if (cache.fontSize !== null && (now - cache.lastFontSizeTime) < cache.CACHE_DURATION) {
+    return cache.fontSize;
+  }
+  
+  // Compute new value
+  const scale = parseFloat(fontScaleInput.value);
+  const baseSize = Math.min(canvas.width * 0.032, 22);
+  cache.fontSize = baseSize * scale;
+  cache.lastFontSizeTime = now;
+  return cache.fontSize;
+}
+
+/**
+ * Clear the computed value cache (call when relevant inputs change)
+ */
+function clearCache() {
+  cache.fontSize = null;
+}

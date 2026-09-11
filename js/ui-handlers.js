@@ -232,6 +232,80 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
+  // Ctrl + S to Save state manually
+  if (e.ctrlKey && e.code === 'KeyS') {
+    e.preventDefault();
+    saveState();
+    // Show brief visual feedback
+    const saveIndicator = document.createElement('div');
+    saveIndicator.textContent = '✓ Saved';
+    saveIndicator.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#00e5ff;color:#000;padding:8px 16px;border-radius:4px;font-size:0.75rem;font-weight:600;z-index:99999;animation:fadeout 2s forwards;';
+    document.body.appendChild(saveIndicator);
+    setTimeout(() => saveIndicator.remove(), 2000);
+    return;
+  }
+
+  // Delete/Backspace to remove selected words
+  if (e.code === 'Delete' || e.code === 'Backspace') {
+    const activeEl = document.activeElement;
+    const isTextInput = activeEl && (
+      activeEl.tagName === 'TEXTAREA' ||
+      (activeEl.tagName === 'INPUT' && ['text', 'number', 'password', 'search'].includes(activeEl.type))
+    );
+    
+    if (!isTextInput && selectedWordIndices.length > 0) {
+      e.preventDefault();
+      pushToUndoStack();
+      // Remove selected words from activeWordsData (in reverse order to maintain indices)
+      selectedWordIndices.sort((a, b) => b - a).forEach(idx => {
+        if (activeWordsData[idx]) {
+          activeWordsData.splice(idx, 1);
+        }
+      });
+      selectedWordIndices = [];
+      isAllSelected = false;
+      saveState();
+      renderTimestampEditorUI();
+      buildWordStructuresFromAudio(activeWordsData);
+      drawFrameAtCurrentTime();
+      return;
+    }
+  }
+
+  // Arrow keys for fine positioning when word(s) selected
+  if ((e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'ArrowLeft' || e.code === 'ArrowRight') && selectedWordIndices.length > 0) {
+    const activeEl = document.activeElement;
+    const isTextInput = activeEl && (
+      activeEl.tagName === 'TEXTAREA' ||
+      (activeEl.tagName === 'INPUT' && ['text', 'number', 'password', 'search'].includes(activeEl.type))
+    );
+    
+    if (!isTextInput) {
+      e.preventDefault();
+      pushToUndoStack();
+      const step = e.shiftKey ? 10 : 1; // Shift for faster movement
+      
+      selectedWordIndices.forEach(idx => {
+        if (wordObjects[idx]) {
+          if (e.code === 'ArrowUp') wordObjects[idx].y -= step;
+          if (e.code === 'ArrowDown') wordObjects[idx].y += step;
+          if (e.code === 'ArrowLeft') wordObjects[idx].x -= step;
+          if (e.code === 'ArrowRight') wordObjects[idx].x += step;
+          
+          // Sync back to data model
+          if (wordObjects[idx].dataIndex !== -1 && activeWordsData[wordObjects[idx].dataIndex]) {
+            activeWordsData[wordObjects[idx].dataIndex].absX = wordObjects[idx].x;
+            activeWordsData[wordObjects[idx].dataIndex].absY = wordObjects[idx].y;
+          }
+        }
+      });
+      
+      saveState();
+      drawFrameAtCurrentTime();
+      return;
+    }
+  }
+
   // Ctrl + A to Select/Deselect All (works on canvas, not in text inputs)
   if (e.ctrlKey && e.code === 'KeyA') {
     const activeEl = document.activeElement;
