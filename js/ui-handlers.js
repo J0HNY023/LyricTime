@@ -1024,6 +1024,12 @@ function toggleCollapse(header) {
 // Make toggleCollapse available globally for onclick handlers
 window.toggleCollapse = toggleCollapse;
 
+// Attach toggleCollapse to collapsible headers
+const positionTransformHeader = document.getElementById('positionTransformHeader');
+if (positionTransformHeader) {
+  positionTransformHeader.addEventListener('click', () => toggleCollapse(positionTransformHeader));
+}
+
 // --- Sidebar Manual Resize Logic ---
 let isResizingSidebar = false;
 

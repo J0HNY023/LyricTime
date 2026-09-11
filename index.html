@@ -6,7 +6,7 @@
   <title>Minimalist Per-Word Dust Dissolve Animation with Speech Recognition</title>
   
   <!-- Content Security Policy (CSP) -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.groq.com; media-src 'self' blob:;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.groq.com https://cdn.jsdelivr.net; media-src 'self' blob:;">
   
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>" type="image/svg+xml">
   
@@ -61,7 +61,7 @@
 
     <!-- Bottom Timestamp Editor (Collapsible) -->
     <div id="timestampEditorContainer" class="bottom-editor collapsed">
-      <div class="editor-header" onclick="toggleEditor()">
+      <div class="editor-header" id="editorHeaderBtn">
         <span class="editor-title">SYNCED WORDS & POSITIONS</span>
         <button class="toggle-btn" id="editorToggleBtn">▲ Expand</button>
       </div>
@@ -123,28 +123,9 @@
           ⚠️ Character limit reached! Maximum is 896 characters.
         </div>
 
-        <div id="wordChipsContainer" style="display:flex; flex-wrap:wrap; gap:6px; max-height:120px; overflow-y:auto; background:#09090c; padding:8px; border:1px solid #22222a; border-radius:4px; margin-top:8px;" role="list" aria-label="Word chips">
+        <div id="wordChipsContainer" role="list" aria-label="Word chips">
           <!-- Word chips injected via JS -->
         </div>
-        <style>
-          #wordChipsContainer::-webkit-scrollbar {
-            width: 6px;
-          }
-          #wordChipsContainer::-webkit-scrollbar-track {
-            background: #0a0a0e;
-            border-radius: 3px;
-          }
-          #wordChipsContainer::-webkit-scrollbar-thumb {
-            background: #5a5a6a;
-            border-radius: 3px;
-            border: 2px solid #0a0a0e;
-            box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.3), 0 0 8px rgb(217, 217, 252);
-          }
-          #wordChipsContainer::-webkit-scrollbar-thumb:hover {
-            background: #7a7a8a;
-            box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.8), 0 0 12px rgba(0, 229, 255, 0.897);
-          }
-        </style>
       </div>
 
       <div class="btn-group">
@@ -175,7 +156,7 @@
       </div>
 
       <div class="form-group collapsible-group">
-        <div class="collapsible-header" onclick="toggleCollapse(this)">
+        <div class="collapsible-header" id="positionTransformHeader">
           <span class="collapse-icon">▼</span>
           <span>Position & Transform</span>
         </div>
