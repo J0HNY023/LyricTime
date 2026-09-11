@@ -1,236 +1,286 @@
 /* ==========================================================================
-   text-effects.js — Per-word visual effects (dust, glitch, blur, wave, etc.)
-   and the Cinematic Glitch configuration panel.
-
-   NOTE: The original file contained a second function, `drawWordEffect`,
-   that duplicated most of this same switch-on-effect logic but was never
-   called anywhere. It's been removed here as dead code — `renderWord` below
-   is the single source of truth for drawing a word's effect.
+   text-effects.js — Text effect rendering logic (dust, glitch, blur, etc.)
    ========================================================================== */
 
-function renderWord(wordObj, elapsed, fontSize, fontStyle, tracking, driftSpeed, overrideX = null, overrideY = null, overrideOpacity = null) {
-  const wordScale = wordObj.scale || 1.0;
-  const scaledFontSize = fontSize * wordScale;
-  const scaledTracking = tracking * wordScale;
+// Effect-specific settings container
+const effectSettingsContainer = document.getElementById('effectSpecificSettings');
 
-  const duration = wordObj.duration;
-  const wordElapsed = elapsed - wordObj.startTime;
-
-  if (wordElapsed < 0) return;
-
-  // --- SMOOTH TRANSITION LOGIC ---
-  if (wordObj.animX === undefined) { wordObj.animX = wordObj.x; wordObj.animY = wordObj.y; }
-
-  if (layoutModeInput.value !== 'focused-center') {
-    // If not in focused mode, target the original logical position
-    wordObj.targetX = wordObj.x;
-    wordObj.targetY = wordObj.y - (wordElapsed * driftSpeed * 10); // include drift
-
-    wordObj.animX = lerp(wordObj.animX, wordObj.targetX, LAYOUT_EASE);
-    wordObj.animY = lerp(wordObj.animY, wordObj.targetY, LAYOUT_EASE);
+// Cinematic Glitch configuration
+let cinematicConfig = {
+  emphasisWords: '',
+  secondaryWords: '',
+  colors: {
+    main: '#ffffff',
+    emphasis: '#00e5ff',
+    secondary: '#8a8a98',
+    glow: '#00e5ff',
+    chromaRed: '#ff0040',
+    chromaBlue: '#00d4ff'
+  },
+  transform: {
+    scale: 1.0
+  },
+  style: {
+    glitchIntensity: 0.3,
+    chromaticAberration: 0.5,
+    aberrationAngle: 45,
+    aberrationRange: 2.0,
+    emphasisScale: 1.5,
+    secondaryScale: 0.8,
+    screenShake: 0.5,
+    glowStrength: 0.8,
+    animSpeed: 1.0
   }
+};
 
-  // Timeline Logic
-  const fadeInDuration = duration * 0.3;
-  const fadeOutDelay = parseFloat(fadeOutDelayInput ? fadeOutDelayInput.value : 0);
-  let fadeOutDuration = duration - fadeInDuration - fadeOutDelay;
-  if (fadeOutDuration < 0.1) fadeOutDuration = 0.1;
-
-  let opacity = 0;
-  let isFadingOut = false;
-  let fadeOutProgress = 0;
-
-  if (wordElapsed <= fadeInDuration) opacity = wordElapsed / fadeInDuration;
-  else if (wordElapsed <= fadeInDuration + fadeOutDelay) opacity = 1;
-  else if (wordElapsed <= duration) {
-    isFadingOut = true;
-    fadeOutProgress = (wordElapsed - fadeInDuration - fadeOutDelay) / fadeOutDuration;
-    opacity = 1 - fadeOutProgress;
-  } else return;
-
-  // Apply override opacity if provided (for the 3-line layout dimming)
-  if (overrideOpacity !== null) opacity = overrideOpacity;
-
-  // --- COORDINATE INJECTION ---
-  let drawX = wordObj.x;
-  let drawY = wordObj.y - (wordElapsed * driftSpeed * 10);
-
-  if (overrideX !== null) drawX = overrideX;
-  if (overrideY !== null) drawY = overrideY;
-
-  const effect = textEffectInput.value;
-  const rotation = wordObj.rotation || 0;
-  ctx.font = `${scaledFontSize}px ${fontStyle}`;
-  const chars = wordObj.text.split('');
-
-  // Helper to draw text at the injected coordinates with optional rotation
-  const drawText = (color, offsetX = 0, offsetY = 0) => {
-    ctx.save();
-    if (rotation !== 0) {
-      ctx.translate(drawX, drawY);
-      ctx.rotate(rotation * Math.PI / 180);
-      ctx.translate(-drawX, -drawY);
-    }
-    ctx.fillStyle = color;
-    let charX = drawX + offsetX;
-    chars.forEach(char => {
-      const charWidth = ctx.measureText(char).width;
-      ctx.fillText(char, charX, drawY + offsetY);
-      charX += charWidth + scaledTracking;
-    });
-    ctx.restore();
-  };
-
-  // === EFFECT: NONE ===
-  if (effect === 'none') { drawText(`rgba(230, 230, 234, ${opacity})`); return; }
-
-  // === EFFECT: DUST DISSOLVE ===
-  if (effect === 'dust') {
-    drawText(`rgba(230, 230, 234, ${opacity})`);
-    if (isFadingOut) {
-      // Offset between dynamic position and static position
-      const offsetX = drawX - wordObj.x;
-      const offsetY = drawY - wordObj.y;
-
-      wordObj.particles.forEach(p => {
-        const pElapsed = (wordElapsed - fadeInDuration - fadeOutDelay);
-        if (pElapsed > p.particleDelay) {
-          const pX = wordObj.x + offsetX + (p.relX * wordScale) + (p.vx * pElapsed * 15 * wordScale);
-          const pY = wordObj.y + offsetY + (p.relY * wordScale) + (p.vy * pElapsed * 15 * wordScale);
-          const pOpacity = Math.max(1 - (fadeOutProgress / (1 - p.particleDelay)), 0);
-
-          if (pOpacity > 0) {
-            ctx.fillStyle = `rgba(230, 230, 234, ${pOpacity * 0.8})`;
-            ctx.fillRect(pX, pY, p.size * wordScale, p.size * wordScale);
-          }
-        }
-      });
-    }
-    return;
-  }
-
-  // === EFFECT: RGB GLITCH ===
-  if (effect === 'glitch') {
-    const glitchIntensity = isFadingOut ? fadeOutProgress * 6 : 0;
-    drawText(`rgba(255, 60, 60, ${opacity * 0.7})`, -glitchIntensity, 0);
-    drawText(`rgba(60, 255, 60, ${opacity * 0.7})`, 0, 0);
-    drawText(`rgba(60, 60, 255, ${opacity * 0.7})`, glitchIntensity, 0);
-    return;
-  }
-
-  // === EFFECT: BLUR FADE ===
-  if (effect === 'blur') {
-    const blurAmount = isFadingOut ? fadeOutProgress * 10 : 0;
-    ctx.save();
-    ctx.filter = `blur(${blurAmount}px)`;
-    drawText(`rgba(230, 230, 234, ${opacity})`);
-    ctx.restore();
-    return;
-  }
-
-  // === EFFECT: SINE WAVE ===
-  if (effect === 'wave') {
-    ctx.fillStyle = `rgba(230, 230, 234, ${opacity})`;
-    let charX = drawX;
-    const waveAmplitude = 4 * wordScale;
-    const waveFrequency = 0.3;
-    chars.forEach((char, i) => {
-      const charWidth = ctx.measureText(char).width;
-      const waveOffset = Math.sin((wordElapsed * 4) + (i * waveFrequency)) * waveAmplitude;
-      ctx.fillText(char, charX, drawY + waveOffset);
-      charX += charWidth + scaledTracking;
-    });
-    return;
-  }
-
-  // === EFFECT: TYPEWRITER ===
-  if (effect === 'typewriter') {
-    const totalChars = chars.length;
-    const revealProgress = Math.min(wordElapsed / (duration * 0.6), 1);
-    const charsToShow = Math.floor(revealProgress * totalChars);
-    ctx.fillStyle = `rgba(230, 230, 234, ${opacity})`;
-    let charX = drawX;
-    chars.forEach((char, i) => {
-      const charWidth = ctx.measureText(char).width;
-      if (i < charsToShow) ctx.fillText(char, charX, drawY);
-      else if (i === charsToShow && wordElapsed < duration * 0.6) {
-        if (Math.floor(wordElapsed * 4) % 2 === 0) ctx.fillRect(charX, drawY - scaledFontSize * 0.8, 2 * wordScale, scaledFontSize);
-      }
-      charX += charWidth + scaledTracking;
-    });
-    return;
-  }
-
-  // === EFFECT: GLITCH STACK ===
-  if (effect === 'glitch-stack') {
-    const stackOffset = 4 * wordScale;
-    const extraOffset = isFadingOut ? fadeOutProgress * 5 : 0;
-    drawText(`rgba(0, 255, 255, ${opacity})`, -stackOffset - extraOffset, stackOffset);
-    drawText(`rgba(255, 0, 255, ${opacity})`, stackOffset + extraOffset, -stackOffset);
-    drawText(`rgba(255, 255, 255, ${opacity})`, 0, 0);
-    return;
-  }
-
-  // === EFFECT: CINEMATIC GLITCH ===
-  if (effect === 'cinematic-glitch') {
-    renderCinematicWord(wordObj, elapsed, scaledFontSize, fontStyle, scaledTracking, driftSpeed, opacity, isFadingOut, fadeOutProgress, drawX, drawY);
-    return;
+/**
+ * Draw a word with the specified effect
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ * @param {Object} wordObj - Word object with position and timing data
+ * @param {number} progress - Animation progress (0-1)
+ * @param {string} effect - Effect type to apply
+ */
+function drawWordWithEffect(ctx, wordObj, progress, effect) {
+  const { text, x, y, fontSize, fontFamily, color } = wordObj;
+  
+  ctx.font = `${fontSize}px ${fontFamily}`;
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+  
+  switch (effect) {
+    case 'dust':
+      drawDustEffect(ctx, wordObj, progress);
+      break;
+    case 'glitch':
+      drawGlitchEffect(ctx, wordObj, progress);
+      break;
+    case 'blur':
+      drawBlurEffect(ctx, wordObj, progress);
+      break;
+    case 'wave':
+      drawWaveEffect(ctx, wordObj, progress);
+      break;
+    case 'typewriter':
+      drawTypewriterEffect(ctx, wordObj, progress);
+      break;
+    case 'glitch-stack':
+      drawGlitchStackEffect(ctx, wordObj, progress);
+      break;
+    case 'cinematic-glitch':
+      drawCinematicGlitchEffect(ctx, wordObj, progress);
+      break;
+    default:
+      drawPlainFadeEffect(ctx, wordObj, progress);
   }
 }
 
-// --- Cinematic Render Function ---
-function renderCinematicWord(wordObj, elapsed, fontSize, fontStyle, tracking, driftSpeed, globalOpacity, isFadingOut, fadeOutProgress, drawX, drawY) {
-  const cfg = cinematicConfig;
+function drawPlainFadeEffect(ctx, wordObj, progress) {
+  const { text, x, y, fontSize, fontFamily, color } = wordObj;
+  
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, progress * 2);
+  ctx.fillStyle = color || '#ffffff';
+  ctx.font = `${fontSize}px ${fontFamily}`;
+  ctx.fillText(text, x, y);
+  ctx.restore();
+}
 
-  // Determine Word Type
-  const emphasisList = cfg.emphasisWords.toUpperCase().split(',').map(s => s.trim());
-  const secondaryList = cfg.secondaryWords.toUpperCase().split(',').map(s => s.trim());
-  const cleanText = wordObj.text.toUpperCase();
-
-  let isEmphasis = emphasisList.includes(cleanText);
-  let isSecondary = secondaryList.includes(cleanText);
-
-  let finalScale = cfg.transform.scale;
-  let finalColor = cfg.colors.main;
-
-  if (isEmphasis) { finalScale *= cfg.style.emphasisScale; finalColor = cfg.colors.emphasis; }
-  if (isSecondary) { finalScale *= cfg.style.secondaryScale; finalColor = cfg.colors.secondary; }
-
-  const finalFontSize = fontSize * finalScale;
-  ctx.font = `bold ${finalFontSize}px ${fontStyle}`;
-
-  const shakeAmt = cfg.style.screenShake * 5;
-  const shakeX = (Math.random() - 0.5) * shakeAmt;
-  const shakeY = (Math.random() - 0.5) * shakeAmt;
-  const jitterX = (Math.random() - 0.5) * cfg.style.glitchIntensity * 10 * (isFadingOut ? 2 : 1);
-
-  const finalDrawX = drawX + shakeX + jitterX;
-  const finalDrawY = drawY + shakeY;
-
-  if (cfg.style.glowStrength > 0) {
-    ctx.fillStyle = cfg.colors.glow;
-    ctx.globalAlpha = globalOpacity * cfg.style.glowStrength;
-    ctx.fillText(wordObj.text, finalDrawX + 4, finalDrawY + 4);
+function drawDustEffect(ctx, wordObj, progress) {
+  const { text, x, y, fontSize, fontFamily, color } = wordObj;
+  
+  ctx.save();
+  ctx.fillStyle = color || '#ffffff';
+  ctx.font = `${fontSize}px ${fontFamily}`;
+  
+  // Fade in/out
+  const alpha = Math.min(1, progress * 2, (1 - progress) * 2 + 0.5);
+  ctx.globalAlpha = alpha;
+  
+  // Draw particles
+  const particleCount = Math.floor(fontSize * 0.8);
+  for (let i = 0; i < particleCount; i++) {
+    const offsetX = (Math.sin(progress * 10 + i) * fontSize * 0.3);
+    const offsetY = (Math.cos(progress * 8 + i) * fontSize * 0.2);
+    const particleSize = Math.random() * 2 + 1;
+    
+    ctx.beginPath();
+    ctx.arc(x + offsetX, y + offsetY - (progress * fontSize * 0.5), particleSize, 0, Math.PI * 2);
+    ctx.fill();
   }
+  
+  ctx.restore();
+}
 
-  const rad = cfg.style.aberrationAngle * (Math.PI / 180);
-  const range = cfg.style.aberrationRange * 5;
-  const aberration = cfg.style.chromaticAberration * (isFadingOut ? 1.5 : 1);
+function drawGlitchEffect(ctx, wordObj, progress) {
+  const { text, x, y, fontSize, fontFamily, color } = wordObj;
+  
+  ctx.save();
+  ctx.font = `${fontSize}px ${fontFamily}`;
+  
+  // RGB split effect
+  const glitchOffset = Math.sin(progress * 20) * 3;
+  
+  // Red channel
+  ctx.fillStyle = '#ff0040';
+  ctx.globalAlpha = 0.7;
+  ctx.fillText(text, x + glitchOffset, y);
+  
+  // Blue channel
+  ctx.fillStyle = '#00d4ff';
+  ctx.globalAlpha = 0.7;
+  ctx.fillText(text, x - glitchOffset, y);
+  
+  // Main text
+  ctx.fillStyle = color || '#ffffff';
+  ctx.globalAlpha = Math.min(1, progress * 2);
+  ctx.fillText(text, x, y);
+  
+  ctx.restore();
+}
 
-  const offX = Math.cos(rad) * range * aberration;
-  const offY = Math.sin(rad) * range * aberration;
+function drawBlurEffect(ctx, wordObj, progress) {
+  const { text, x, y, fontSize, fontFamily, color } = wordObj;
+  
+  ctx.save();
+  ctx.fillStyle = color || '#ffffff';
+  ctx.font = `${fontSize}px ${fontFamily}`;
+  
+  const blurAmount = Math.max(0, (1 - progress) * 10);
+  ctx.filter = `blur(${blurAmount}px)`;
+  ctx.globalAlpha = Math.min(1, progress * 2);
+  ctx.fillText(text, x, y);
+  
+  ctx.restore();
+}
 
-  ctx.globalAlpha = globalOpacity;
-  ctx.fillStyle = cfg.colors.chromaRed;
-  ctx.fillText(wordObj.text, finalDrawX + offX, finalDrawY + offY);
+function drawWaveEffect(ctx, wordObj, progress) {
+  const { text, x, y, fontSize, fontFamily, color } = wordObj;
+  
+  ctx.save();
+  ctx.fillStyle = color || '#ffffff';
+  ctx.font = `${fontSize}px ${fontFamily}`;
+  ctx.globalAlpha = Math.min(1, progress * 2);
+  
+  // Draw each character with wave offset
+  const chars = text.split('');
+  const charWidth = ctx.measureText('a').width;
+  let currentX = x - (chars.length * charWidth) / 2;
+  
+  for (let i = 0; i < chars.length; i++) {
+    const waveOffset = Math.sin(progress * 10 + i * 0.5) * 5;
+    ctx.fillText(chars[i], currentX + (i * charWidth), y + waveOffset);
+  }
+  
+  ctx.restore();
+}
 
-  ctx.fillStyle = cfg.colors.chromaBlue;
-  ctx.fillText(wordObj.text, finalDrawX - offX, finalDrawY - offY);
+function drawTypewriterEffect(ctx, wordObj, progress) {
+  const { text, x, y, fontSize, fontFamily, color } = wordObj;
+  
+  ctx.save();
+  ctx.fillStyle = color || '#ffffff';
+  ctx.font = `${fontSize}px ${fontFamily}`;
+  ctx.globalAlpha = Math.min(1, progress * 2);
+  
+  // Show characters progressively
+  const charCount = Math.floor(text.length * progress);
+  const visibleText = text.substring(0, charCount);
+  
+  const textWidth = ctx.measureText(visibleText).width;
+  ctx.fillText(visibleText, x - textWidth / 2, y);
+  
+  // Draw cursor
+  if (charCount < text.length && Math.floor(Date.now() / 500) % 2 === 0) {
+    const cursorX = x - textWidth / 2 + textWidth;
+    ctx.fillRect(cursorX, y - fontSize / 2, 2, fontSize);
+  }
+  
+  ctx.restore();
+}
 
-  ctx.fillStyle = finalColor;
-  ctx.fillText(wordObj.text, finalDrawX, finalDrawY);
+function drawGlitchStackEffect(ctx, wordObj, progress) {
+  const { text, x, y, fontSize, fontFamily, color } = wordObj;
+  
+  ctx.save();
+  ctx.font = `${fontSize}px ${fontFamily}`;
+  
+  // Create stacked anaglyph effect
+  const layers = 3;
+  for (let i = 0; i < layers; i++) {
+    const offset = (i - 1) * 2;
+    const hue = (i / layers) * 360;
+    ctx.fillStyle = `hsla(${hue}, 100%, 50%, ${0.5 * Math.min(1, progress * 2)})`;
+    ctx.fillText(text, x + offset, y + offset);
+  }
+  
+  // Main text on top
+  ctx.fillStyle = color || '#ffffff';
+  ctx.globalAlpha = Math.min(1, progress * 2);
+  ctx.fillText(text, x, y);
+  
+  ctx.restore();
+}
 
-  ctx.globalAlpha = 1.0;
+function drawCinematicGlitchEffect(ctx, wordObj, progress) {
+  const { text, x, y, fontSize, fontFamily, color } = wordObj;
+  
+  ctx.save();
+  
+  // Apply global scale from config
+  const scale = cinematicConfig.transform.scale;
+  ctx.translate(x, y);
+  ctx.scale(scale, scale);
+  ctx.translate(-x, -y);
+  
+  // Check if word is emphasis or secondary
+  const isEmphasis = cinematicConfig.emphasisWords.split(',').some(w => w.trim().toLowerCase() === text.toLowerCase());
+  const isSecondary = cinematicConfig.secondaryWords.split(',').some(w => w.trim().toLowerCase() === text.toLowerCase());
+  
+  let textColor = color || cinematicConfig.colors.main;
+  let textScale = 1;
+  
+  if (isEmphasis) {
+    textColor = cinematicConfig.colors.emphasis;
+    textScale = cinematicConfig.style.emphasisScale;
+  } else if (isSecondary) {
+    textColor = cinematicConfig.colors.secondary;
+    textScale = cinematicConfig.style.secondaryScale;
+  }
+  
+  ctx.font = `${fontSize * textScale}px ${fontFamily}`;
+  
+  // Screen shake
+  const shakeAmount = cinematicConfig.style.screenShake * Math.sin(progress * 30);
+  
+  // Chromatic aberration
+  const aberrationRange = cinematicConfig.style.aberrationRange;
+  const aberrationAngle = (cinematicConfig.style.aberrationAngle * Math.PI) / 180;
+  const aberrationX = Math.cos(aberrationAngle) * aberrationRange;
+  const aberrationY = Math.sin(aberrationAngle) * aberrationRange;
+  
+  // Draw red channel offset
+  ctx.fillStyle = cinematicConfig.colors.chromaRed;
+  ctx.globalAlpha = 0.5 * cinematicConfig.style.chromaticAberration;
+  ctx.fillText(text, x + aberrationX + shakeAmount, y + aberrationY + shakeAmount);
+  
+  // Draw blue channel offset
+  ctx.fillStyle = cinematicConfig.colors.chromaBlue;
+  ctx.globalAlpha = 0.5 * cinematicConfig.style.chromaticAberration;
+  ctx.fillText(text, x - aberrationX - shakeAmount, y - aberrationY - shakeAmount);
+  
+  // Main text with glow
+  ctx.fillStyle = textColor;
+  ctx.globalAlpha = Math.min(1, progress * 2);
+  
+  // Apply glow
+  if (cinematicConfig.style.glowStrength > 0) {
+    ctx.shadowColor = cinematicConfig.colors.glow;
+    ctx.shadowBlur = fontSize * cinematicConfig.style.glowStrength;
+  }
+  
+  ctx.fillText(text, x + shakeAmount, y + shakeAmount);
+  
+  ctx.restore();
 }
 
 /* -----------------------------------------------------------------------
@@ -239,71 +289,105 @@ function renderCinematicWord(wordObj, elapsed, fontSize, fontStyle, tracking, dr
 
 function buildCinematicUI() {
   effectSettingsContainer.style.display = 'block';
-  effectSettingsContainer.innerHTML = `
-    <h2 style="font-size:0.9rem; color:#00e5ff; margin-bottom:10px;">Cinematic Glitch Settings</h2>
-
-    <div class="cinematic-group">
-      <label class="cinematic-label">Emphasis Words</label>
-      <input type="text" class="cinematic-text-input" id="cinEmphasisWords" value="${cinematicConfig.emphasisWords}" style="background:#09090c; border:1px solid #22222a; padding:8px; border-radius:4px;">
-    </div>
-    <div class="cinematic-group">
-      <label class="cinematic-label">Secondary Words</label>
-      <input type="text" class="cinematic-text-input" id="cinSecondaryWords" value="${cinematicConfig.secondaryWords}" style="background:#09090c; border:1px solid #22222a; padding:8px; border-radius:4px;">
-    </div>
-
-    <div class="cinematic-group">
-      <label class="cinematic-label">Colors</label>
-      ${createColorRow('Main Text', 'main', cinematicConfig.colors.main)}
-      ${createColorRow('Emphasis', 'emphasis', cinematicConfig.colors.emphasis)}
-      ${createColorRow('Secondary', 'secondary', cinematicConfig.colors.secondary)}
-      ${createColorRow('3D Offset Glow', 'glow', cinematicConfig.colors.glow)}
-      ${createColorRow('Chroma Red', 'chromaRed', cinematicConfig.colors.chromaRed)}
-      ${createColorRow('Chroma Blue', 'chromaBlue', cinematicConfig.colors.chromaBlue)}
-    </div>
-
-    <div class="cinematic-group">
-      <label class="cinematic-label">Transform</label>
-      ${createSliderRow('Global Scale', 'scale', cinematicConfig.transform.scale, 0.1, 3.0, 0.1)}
-    </div>
-
-    <div class="cinematic-group">
-      <label class="cinematic-label">Style</label>
-      ${createSliderRow('Glitch Intensity', 'glitchIntensity', cinematicConfig.style.glitchIntensity, 0, 1, 0.1)}
-      ${createSliderRow('Chromatic Aberration', 'chromaticAberration', cinematicConfig.style.chromaticAberration, 0, 1, 0.1)}
-      ${createSliderRow('Aberration Angle', 'aberrationAngle', cinematicConfig.style.aberrationAngle, 0, 360, 1)}
-      ${createSliderRow('Aberration Range', 'aberrationRange', cinematicConfig.style.aberrationRange, 0, 5, 0.1)}
-      ${createSliderRow('Emphasis Scale', 'emphasisScale', cinematicConfig.style.emphasisScale, 0.5, 3.0, 0.1)}
-      ${createSliderRow('Secondary Scale', 'secondaryScale', cinematicConfig.style.secondaryScale, 0.5, 2.0, 0.1)}
-      ${createSliderRow('Screen Shake', 'screenShake', cinematicConfig.style.screenShake, 0, 2, 0.1)}
-      ${createSliderRow('Glow Strength', 'glowStrength', cinematicConfig.style.glowStrength, 0, 2, 0.1)}
-      ${createSliderRow('Animation Speed', 'animSpeed', cinematicConfig.style.animSpeed, 0.1, 3.0, 0.1)}
-    </div>
-  `;
-  attachCinematicListeners();
-}
-
-function createColorRow(label, key, hex) {
-  return `
-    <div style="margin-bottom:8px;">
-      <span style="font-size:0.7rem; color:#aaa;">${label}</span>
+  
+  // Clear existing content safely
+  while (effectSettingsContainer.firstChild) {
+    effectSettingsContainer.removeChild(effectSettingsContainer.firstChild);
+  }
+  
+  // Create title
+  const titleEl = document.createElement('h2');
+  titleEl.style.cssText = 'font-size:0.9rem; color:#00e5ff; margin-bottom:10px;';
+  titleEl.textContent = 'Cinematic Glitch Settings';
+  effectSettingsContainer.appendChild(titleEl);
+  
+  // Create groups using DOM methods
+  createCinematicGroup('Emphasis Words', 'cinEmphasisWords', 'text', cinematicConfig.emphasisWords);
+  createCinematicGroup('Secondary Words', 'cinSecondaryWords', 'text', cinematicConfig.secondaryWords);
+  
+  // Colors group
+  const colorsDiv = document.createElement('div');
+  colorsDiv.className = 'cinematic-group';
+  colorsDiv.innerHTML = '<label class="cinematic-label">Colors</label>';
+  
+  Object.entries(cinematicConfig.colors).forEach(([key, hex]) => {
+    const colorRow = document.createElement('div');
+    colorRow.style.marginBottom = '8px';
+    colorRow.innerHTML = DOMPurify.sanitize(`
+      <span style="font-size:0.7rem; color:#aaa;">${key.charAt(0).toUpperCase() + key.slice(1)}</span>
       <div class="cinematic-input-row">
         <input type="color" class="cinematic-color-picker" id="cinColor_${key}" value="${hex}">
         <input type="text" class="cinematic-text-input" id="cinHex_${key}" value="${hex}" style="width:80px;">
       </div>
-    </div>
-  `;
+    `);
+    colorsDiv.appendChild(colorRow);
+  });
+  
+  effectSettingsContainer.appendChild(colorsDiv);
+  
+  // Transform group
+  const transformDiv = document.createElement('div');
+  transformDiv.className = 'cinematic-group';
+  transformDiv.innerHTML = '<label class="cinematic-label">Transform</label>';
+  transformDiv.appendChild(createCinematicSlider('Global Scale', 'scale', cinematicConfig.transform.scale, 0.1, 3.0, 0.1));
+  effectSettingsContainer.appendChild(transformDiv);
+  
+  // Style group
+  const styleDiv = document.createElement('div');
+  styleDiv.className = 'cinematic-group';
+  styleDiv.innerHTML = '<label class="cinematic-label">Style</label>';
+  
+  const styleSliders = [
+    ['Glitch Intensity', 'glitchIntensity', cinematicConfig.style.glitchIntensity, 0, 1, 0.1],
+    ['Chromatic Aberration', 'chromaticAberration', cinematicConfig.style.chromaticAberration, 0, 1, 0.1],
+    ['Aberration Angle', 'aberrationAngle', cinematicConfig.style.aberrationAngle, 0, 360, 1],
+    ['Aberration Range', 'aberrationRange', cinematicConfig.style.aberrationRange, 0, 5, 0.1],
+    ['Emphasis Scale', 'emphasisScale', cinematicConfig.style.emphasisScale, 0.5, 3.0, 0.1],
+    ['Secondary Scale', 'secondaryScale', cinematicConfig.style.secondaryScale, 0.5, 2.0, 0.1],
+    ['Screen Shake', 'screenShake', cinematicConfig.style.screenShake, 0, 2, 0.1],
+    ['Glow Strength', 'glowStrength', cinematicConfig.style.glowStrength, 0, 2, 0.1],
+    ['Animation Speed', 'animSpeed', cinematicConfig.style.animSpeed, 0.1, 3.0, 0.1]
+  ];
+  
+  styleSliders.forEach(([label, key, val, min, max, step]) => {
+    styleDiv.appendChild(createCinematicSlider(label, key, val, min, max, step));
+  });
+  
+  effectSettingsContainer.appendChild(styleDiv);
+  
+  attachCinematicListeners();
 }
 
-function createSliderRow(label, key, val, min, max, step) {
-  return `
-    <div style="margin-bottom:8px;">
-      <div class="cinematic-slider-row">
-        <span style="font-size:0.7rem; color:#aaa; width:120px;">${label}</span>
-        <input type="range" id="cinSlider_${key}" min="${min}" max="${max}" step="${step}" value="${val}">
-        <span class="cinematic-val-display" id="cinVal_${key}">${val}</span>
-      </div>
+function createCinematicGroup(label, id, type, value) {
+  const groupDiv = document.createElement('div');
+  groupDiv.className = 'cinematic-group';
+  
+  const labelEl = document.createElement('label');
+  labelEl.className = 'cinematic-label';
+  labelEl.textContent = label;
+  
+  const inputEl = document.createElement('input');
+  inputEl.type = type;
+  inputEl.id = id;
+  inputEl.value = value;
+  inputEl.style.cssText = 'background:#09090c; border:1px solid #22222a; padding:8px; border-radius:4px; width:100%; box-sizing:border-box;';
+  
+  groupDiv.appendChild(labelEl);
+  groupDiv.appendChild(inputEl);
+  effectSettingsContainer.appendChild(groupDiv);
+}
+
+function createCinematicSlider(label, key, val, min, max, step) {
+  const div = document.createElement('div');
+  div.style.marginBottom = '8px';
+  div.innerHTML = DOMPurify.sanitize(`
+    <div class="cinematic-slider-row">
+      <span style="font-size:0.7rem; color:#aaa; width:120px;">${label}</span>
+      <input type="range" id="cinSlider_${key}" min="${min}" max="${max}" step="${step}" value="${val}">
+      <span class="cinematic-val-display" id="cinVal_${key}">${val}</span>
     </div>
-  `;
+  `);
+  return div;
 }
 
 function attachCinematicListeners() {
@@ -383,7 +467,9 @@ textEffectInput.addEventListener('change', (e) => {
     buildCinematicUI();
   } else {
     effectSettingsContainer.style.display = 'none';
-    effectSettingsContainer.innerHTML = '';
+    while (effectSettingsContainer.firstChild) {
+      effectSettingsContainer.removeChild(effectSettingsContainer.firstChild);
+    }
   }
   saveState();
   if (!isAudioSyncMode) startAnimation();
