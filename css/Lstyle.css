@@ -257,6 +257,32 @@ canvas {
     0 0 12px rgba(0, 229, 255, 0.897);
 }
 
+/* Advanced Settings Panel */
+.advanced-settings-panel {
+  margin-top: 20px;
+  border-top: 1px solid #22222a;
+  padding-top: 15px;
+  background: rgba(9, 9, 12, 0.5);
+  border-radius: 6px;
+  padding-left: 12px;
+  padding-right: 12px;
+  transition: all 0.3s ease;
+}
+
+.advanced-settings-panel[hidden] {
+  display: none;
+}
+
+.panel-header {
+  font-size: 0.75rem;
+  color: #00e5ff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #22222a;
+}
+
 .sidebar h2 {
   border-bottom: 1px solid #22222a;
   color: #d0d0da;
