@@ -19,10 +19,14 @@
         <canvas id="animCanvas" role="img" aria-label="Word animation display canvas"></canvas>
 
         <!-- Audio Timeline Player Bar -->
-        <div id="audioControls" class="audio-controls-bar" role="toolbar" aria-label="Audio playback controls">
-          <button id="playPauseBtn" class="audio-btn" aria-label="Play or pause audio">▶</button>
-          <button id="loopBtn" class="audio-btn" title="Toggle Loop" style="font-size:0.75rem;" aria-label="Toggle loop mode">🔁</button>
-          <button id="fullscreenBtn" class="audio-btn" title="Toggle Fullscreen" style="font-size:0.85rem;" aria-label="Toggle fullscreen">⛶</button>
+        <div id="audioControls" class="audio-controls-bar">
+          <button id="playPauseBtn" class="audio-btn">▶</button>
+          <button id="loopBtn" class="audio-btn" title="Toggle Loop" style="font-size:0.75rem;">🔁</button>
+          <button id="fullscreenBtn" class="audio-btn" title="Toggle Fullscreen" style="font-size:0.85rem;">⛶</button>
+          
+          <!-- Undo/Redo Buttons -->
+          <button id="undoBtn" class="audio-btn" title="Undo (Ctrl+Z)" style="font-size:0.75rem;">↶</button>
+          <button id="redoBtn" class="audio-btn" title="Redo (Ctrl+Y)" style="font-size:0.75rem;">↷</button>
 
           <div style="display:flex; align-items:center; gap:4px; margin-right:10px;">
             <span style="font-size:0.75rem; color:#8a8a98;" id="scrubLabel">Scrub:</span>
@@ -163,9 +167,22 @@
         <span id="layoutModeDesc" style="position:absolute; clip:rect(0 0 0 0); overflow:hidden;">Choose how words are arranged on the canvas</span>
       </div>
 
-      <div class="form-group" id="wordGapContainer">
-        <label for="centerXOffset">Word Gap <span id="centerXOffsetVal">0px</span></label>
-        <input type="range" id="centerXOffset" name="centerXOffset" min="-50" max="200" step="1" value="0" aria-labelledby="centerXOffset" aria-valuemin="-50" aria-valuemax="200" aria-valuenow="0">
+      <div class="form-group collapsible-group">
+        <div class="collapsible-header" onclick="toggleCollapse(this)">
+          <span class="collapse-icon">▼</span>
+          <span>Position & Transform</span>
+        </div>
+        <div class="collapsible-content">
+          <div class="form-group">
+            <label for="centerXOffset">Word Gap <span id="centerXOffsetVal">0px</span></label>
+            <input type="range" id="centerXOffset" min="-50" max="200" step="1" value="0">
+          </div>
+          
+          <div class="form-group">
+            <label for="rotationSlider">Rotation (Selected Words) <span id="rotationVal">0°</span></label>
+            <input type="range" id="rotationSlider" min="-180" max="180" step="1" value="0">
+          </div>
+        </div>
       </div>
 
       <div class="form-group">

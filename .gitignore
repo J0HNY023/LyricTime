@@ -12,8 +12,6 @@ __pycache__/
 *.out
 
 # Dependencies
-node_modules/
-venv/
 .venv/
 .env
 .env.local
