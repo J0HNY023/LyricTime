@@ -91,6 +91,12 @@ window.toggleEditor = function () {
   }, 300);
 };
 
+// Attach toggleEditor to the editor header button
+const editorHeaderBtn = document.getElementById('editorHeaderBtn');
+if (editorHeaderBtn) {
+  editorHeaderBtn.addEventListener('click', window.toggleEditor);
+}
+
 // --- Timestamp Step Change Handler ---
 function updateTimestampSteps() {
   const stepInput = document.getElementById('timestampStepInput');
@@ -115,7 +121,7 @@ function renderTimestampEditorUI() {
     editorContainer.className = 'bottom-editor collapsed';
 
     editorContainer.innerHTML = `
-      <div class="editor-header" onclick="toggleEditor()">
+      <div class="editor-header" id="editorHeaderBtn">
         <span class="editor-title">SYNCED WORDS & POSITIONS</span>
         <button class="toggle-btn" id="editorToggleBtn">▲ Expand</button>
       </div>
@@ -123,6 +129,12 @@ function renderTimestampEditorUI() {
     `;
 
     document.querySelector('.main-content').appendChild(editorContainer);
+    
+    // Re-attach the event listener for the dynamically created element
+    const newEditorHeaderBtn = document.getElementById('editorHeaderBtn');
+    if (newEditorHeaderBtn) {
+      newEditorHeaderBtn.addEventListener('click', window.toggleEditor);
+    }
   }
 
   // Hide completely if no data
