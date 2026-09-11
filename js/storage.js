@@ -118,9 +118,11 @@ async function loadState() {
       }
       if (state.cinematicConfig) {
         cinematicConfig = state.cinematicConfig;
+        // Always rebuild UI if cinematic config exists, regardless of current effect
+        // This ensures settings persist and show when switching to cinematic-glitch
+        buildCinematicUI();
         if (state.textEffect === 'cinematic-glitch') {
           textEffectInput.value = 'cinematic-glitch';
-          buildCinematicUI(); // Rebuild UI with loaded values
         }
       }
 

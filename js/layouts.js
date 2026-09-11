@@ -141,8 +141,8 @@ function buildWordStructuresFromAudio(wordsData) {
       wWidth += ctx.measureText(char).width + tracking;
     });
 
-    // Add word gap for focused-center layout mode
-    const wordGap = (layoutModeInput && layoutModeInput.value === 'focused-center') ? (parseFloat(centerXOffsetInput.value) || 0) : 0;
+    // Add word gap for all layout modes (not just focused-center)
+    const wordGap = parseFloat(centerXOffsetInput.value) || 0;
     const effectiveSpaceWidth = spaceWidth + wordGap;
 
     // WRAP LOGIC

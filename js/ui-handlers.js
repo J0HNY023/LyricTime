@@ -191,20 +191,6 @@ document.addEventListener('keydown', (e) => {
       return;
     }
   }
-  
-  // Alt + A fallback for select all
-  if (e.altKey && e.code === 'KeyA') {
-    e.preventDefault();
-    isAllSelected = !isAllSelected;
-
-    if (isAllSelected) {
-      selectedWordIndices = wordObjects.map((_, i) => i);
-    } else {
-      selectedWordIndices = [];
-    }
-    drawFrameAtCurrentTime();
-    return;
-  }
 
   const activeEl = document.activeElement;
   const isTextInput = activeEl && (
