@@ -96,14 +96,10 @@ async function loadState() {
         centerXOffsetVal.textContent = `${state.centerXOffset}px`;
       }
       
-      // Show/hide Word Gap based on loaded layout mode
+      // Word Gap setting visible for all layouts
       const wordGapContainer = document.getElementById('wordGapContainer');
-      if (wordGapContainer && state.layoutMode !== undefined) {
-        if (state.layoutMode === 'focused-center') {
-          wordGapContainer.style.display = 'block';
-        } else {
-          wordGapContainer.style.display = 'none';
-        }
+      if (wordGapContainer) {
+        wordGapContainer.style.display = 'block';
       }
 
       if (state.debugMode !== undefined) {

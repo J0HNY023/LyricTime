@@ -56,6 +56,9 @@ textInput.addEventListener('input', () => {
   updateCharCounter();
   renderWordChips();
 
+  // Save state to undo stack
+  pushToUndoStack();
+  
   // Save state
   updateLabels();
   saveState();
@@ -167,6 +170,8 @@ triggerBtn.addEventListener('click', () => {
   // If audio exists and is loaded, add timestamps with 0.24s spacing
   if (audioElement.src && audioElement.src.length > 0) {
     if (activeWordsData.length === 0) {
+      pushToUndoStack();
+      
       const words = textInput.value.trim().split(/\s+/).filter(w => w.length > 0);
       const defaultDuration = parseFloat(wordLifeInput.value) || 1.5;
       const spacing = 0.24;
@@ -196,6 +201,7 @@ triggerBtn.addEventListener('click', () => {
   }
   
   // No audio: Just rebuild word structures without timestamps
+  pushToUndoStack();
   isAudioSyncMode = false;
   saveState();
   buildWordStructures();
@@ -209,6 +215,23 @@ window.addEventListener('resize', () => {
 
 // --- Enhanced Keyboard Controls ---
 document.addEventListener('keydown', (e) => {
+  // Ctrl + Z for Undo, Ctrl + Y or Ctrl + Shift + Z for Redo
+  if (e.ctrlKey && e.code === 'KeyZ') {
+    e.preventDefault();
+    if (e.shiftKey) {
+      redo();
+    } else {
+      undo();
+    }
+    return;
+  }
+  
+  if (e.ctrlKey && e.code === 'KeyY') {
+    e.preventDefault();
+    redo();
+    return;
+  }
+
   // Ctrl + A to Select/Deselect All (works on canvas, not in text inputs)
   if (e.ctrlKey && e.code === 'KeyA') {
     const activeEl = document.activeElement;
@@ -216,7 +239,7 @@ document.addEventListener('keydown', (e) => {
       activeEl.tagName === 'TEXTAREA' ||
       (activeEl.tagName === 'INPUT' && ['text', 'number', 'password', 'search'].includes(activeEl.type))
     );
-    
+
     // Only select all words if NOT focused on a text input
     if (!isTextInput) {
       e.preventDefault();
@@ -560,7 +583,7 @@ canvas.addEventListener('pointermove', (e) => {
 
   // 2. Hover cursor & Tooltip Text
   const hoverIndex = getWordAtPosition(coords.x, coords.y);
-  let tooltipText = 'Ctrl+A to Select All'; // Default text for empty space
+  let tooltipText = 'alt+ hover on edges to resize'; // Default text for empty space when Alt is pressed
 
   if (selectedWordIndices.length > 0) {
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -611,7 +634,7 @@ canvas.addEventListener('pointermove', (e) => {
         tooltipText = 'Drag Group';
       } else {
         canvas.style.cursor = 'default';
-        tooltipText = 'Ctrl+A to Select All';
+        tooltipText = 'alt+ hover on edges to resize';
       }
     } else {
       canvas.style.cursor = insideBox ? 'grab' : 'default';
