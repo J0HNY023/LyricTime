@@ -1,11 +1,4 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-Nothing needs to be added to .gitignore since the changes only include source files (.js, .html, .md) and no build artifacts, dependencies, or temporary files.
-=======
-Nothing needs to be added to .gitignore since only a README.md file was added, which is a source/config file and should not be ignored.
->>>>>>> 0cfbbcb (Add comprehensive README documentation for web-based text animation tool)
-=======
-```
+
 # Compiled and build artifacts
 *.pyc
 __pycache__/
@@ -79,4 +72,4 @@ htmlcov/
 *.tar.xz
 *.tar.zst
 ```
->>>>>>> da00699 (Adjust canvas controls transparency and add undo/redo features)
+
