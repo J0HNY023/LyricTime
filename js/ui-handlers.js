@@ -448,8 +448,8 @@ canvas.addEventListener('pointerdown', (e) => {
       }];
     }
 
-    // Check for rotation mode (Alt + Shift), resize mode (Alt only), or drag mode
-    if (isAltDown && e.shiftKey) {
+    // Check for rotation mode (Ctrl + Alt), resize mode (Alt only), or drag mode
+    if (isCtrlDown && isAltDown) {
       isRotating = true;
       rotateStartX = coords.x;
     } else if (isAltDown) {
@@ -470,8 +470,8 @@ canvas.addEventListener('pointerdown', (e) => {
       dragStartStates = selectedWordIndices.map(idx => ({
         idx: idx, startX: wordObjects[idx].x, startY: wordObjects[idx].y, startScale: wordObjects[idx].scale || 1.0
       }));
-      // Check for rotation mode (Alt + Shift), resize mode (Alt only), or drag mode
-      if (isAltDown && e.shiftKey) {
+      // Check for rotation mode (Ctrl + Alt), resize mode (Alt only), or drag mode
+      if (isCtrlDown && isAltDown) {
         isRotating = true;
         rotateStartX = coords.x;
       } else if (isAltDown) {
@@ -514,6 +514,12 @@ canvas.addEventListener('pointermove', (e) => {
     canvasTooltip.style.display = 'block';
     canvasTooltip.style.left = `${e.clientX}px`;
     canvasTooltip.style.top = `${e.clientY}px`;
+    
+    if (isAltDown && !isCtrlDown) {
+      canvasTooltip.textContent = 'alt+ hover on edges to resize';
+    } else if (isCtrlDown) {
+      canvasTooltip.textContent = 'ctrl + a to select all | ctrl + drag to marquee select';
+    }
   } else {
     canvasTooltip.style.display = 'none';
   }
@@ -535,7 +541,7 @@ canvas.addEventListener('pointermove', (e) => {
       });
       drawFrameAtCurrentTime();
       canvas.style.cursor = 'nwse-resize';
-      if (isAltDown) canvasTooltip.textContent = 'Resizing...';
+      if (isAltDown) canvasTooltip.textContent = 'alt+ hover on edges to resize';
     } else if (isDragging) {
       dragStartStates.forEach(state => {
         let newAbsX = state.startX + dx;
