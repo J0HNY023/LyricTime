@@ -2,8 +2,8 @@
    text-effects.js — Text effect rendering logic (dust, glitch, blur, etc.)
    ========================================================================== */
 
-// Effect-specific settings container is imported from config.js
-// const effectSettingsContainer is defined in config.js line 73
+// Import effectSettingsContainer from config.js (declared there)
+// Import cinematicConfig from state.js (declared there)
 
 /**
  * Render a word with the appropriate effect
@@ -59,33 +59,8 @@ function renderWord(wordObj, activeTime, fontSize, fontFamily, tracking, driftSp
   }
 }
 
-// Cinematic Glitch configuration
-let cinematicConfig = {
-  emphasisWords: '',
-  secondaryWords: '',
-  colors: {
-    main: '#ffffff',
-    emphasis: '#00e5ff',
-    secondary: '#8a8a98',
-    glow: '#00e5ff',
-    chromaRed: '#ff0040',
-    chromaBlue: '#00d4ff'
-  },
-  transform: {
-    scale: 1.0
-  },
-  style: {
-    glitchIntensity: 0.3,
-    chromaticAberration: 0.5,
-    aberrationAngle: 45,
-    aberrationRange: 2.0,
-    emphasisScale: 1.5,
-    secondaryScale: 0.8,
-    screenShake: 0.5,
-    glowStrength: 0.8,
-    animSpeed: 1.0
-  }
-};
+// Cinematic Glitch configuration is imported from state.js
+// let cinematicConfig = { ... } is defined in state.js line 169
 
 /**
  * Draw a word with the specified effect
