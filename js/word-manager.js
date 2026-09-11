@@ -233,7 +233,9 @@ document.getElementById('resetLayoutBtn').addEventListener('click', () => {
   }
 
   // 4. Redraw the canvas to show the reset positions immediately
-  drawFrame(0);
+  if (typeof drawFrameAtCurrentTime === 'function') {
+    drawFrameAtCurrentTime();
+  }
 
   // 5. Provide visual feedback
   const btn = document.getElementById('resetLayoutBtn');
