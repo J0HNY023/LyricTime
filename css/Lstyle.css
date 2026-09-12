@@ -551,3 +551,49 @@ input[type="range"] {
   white-space: nowrap;
   transform: translate(12px, 12px);
 }
+
+/* --- Collapsible Sections (Position & Transform) --- */
+.collapsible-group {
+  margin-bottom: 10px;
+}
+
+.collapsible-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #1a1a24;
+  border: 1px solid #2a2a3a;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #d0d0da;
+  transition: background 0.2s ease;
+}
+
+.collapsible-header:hover {
+  background: #22222a;
+}
+
+.collapse-icon {
+  font-size: 0.65rem;
+  transition: transform 0.2s ease;
+}
+
+.collapsible-header.collapsed .collapse-icon {
+  transform: rotate(-90deg);
+}
+
+.collapsible-content {
+  max-height: 500px;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  padding: 0 8px;
+}
+
+.collapsible-content.collapsed {
+  max-height: 0;
+  padding: 0 8px;
+}
