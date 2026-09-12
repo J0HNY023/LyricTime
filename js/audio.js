@@ -238,11 +238,19 @@ function transcribeAudioWithProgress(file, apiKey) {
 // --- Audio File Input Handler ---
 audioUpload.addEventListener('change', async () => {
   const file = audioUpload.files[0];
+  const fileNameSpan = document.getElementById('audioFileName');
   if (file) {
     await saveAudioFileToDB(file);
     const rawAudioUrl = URL.createObjectURL(file);
     audioElement.src = rawAudioUrl;
     audioControls.classList.add('active');
+    if (fileNameSpan) {
+      fileNameSpan.textContent = file.name.length > 30 ? file.name.substring(0, 27) + '...' : file.name;
+    }
+  } else {
+    if (fileNameSpan) {
+      fileNameSpan.textContent = 'No file chosen';
+    }
   }
 });
 

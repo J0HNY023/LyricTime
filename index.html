@@ -151,7 +151,13 @@
 
       <div class="form-group">
         <label for="audioUpload">Upload Audio File</label>
-        <input type="file" id="audioUpload" name="audioUpload" accept="audio/*" aria-describedby="audioUploadDesc">
+        <div class="upload-container">
+          <label for="audioUpload" class="custom-file-upload">
+            <i class="fas fa-cloud-upload-alt"></i> Choose Audio File
+          </label>
+          <input type="file" id="audioUpload" name="audioUpload" accept="audio/*" aria-describedby="audioUploadDesc">
+          <span id="audioFileName" class="file-name">No file chosen</span>
+        </div>
         <span id="audioUploadDesc" style="position:absolute; clip:rect(0 0 0 0); overflow:hidden;">Select an audio file for transcription and synchronization</span>
       </div>
 
@@ -159,9 +165,11 @@
       </div><!-- End animationControlsPanel -->
       
       <div class="form-group" style="margin-top: 10px; border-top: 1px solid #2a2a3a; padding-top: 10px;">
-        <button id="clampToScreenBtn" class="btn-primary" style="background:#2a2a3a; color:#fff; border:1px solid #3a3a4a; font-size:0.7rem; padding:6px 10px; width:100%;" aria-label="Clamp all words to stay within canvas bounds">
-          ⟂ Clamp Words to Screen
-        </button>
+        <label class="toggle-label" style="width:100%; display:flex; align-items:center; justify-content:space-between;">
+          <span style="font-size:0.7rem; color:#fff;">Limit to Screen</span>
+          <input type="checkbox" id="clampToScreenToggle" aria-label="Clamp all words to stay within canvas bounds">
+          <span class="toggle-slider"></span>
+        </label>
       </div>
 
       <h2>Typography & FX</h2>
