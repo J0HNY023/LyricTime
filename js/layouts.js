@@ -91,7 +91,8 @@ function buildWordStructures() {
         animX: currentX,
         animY: currentY,
         targetX: currentX,
-        targetY: currentY
+        targetY: currentY,
+        savedGap: parseFloat(centerXOffsetInput.value) || 0
       });
 
       // Apply word gap after each word (except the last one on the line)
@@ -169,14 +170,20 @@ function buildWordStructuresFromAudio(wordsData) {
     const offsetX = wordItem.offsetX || 0;
     const offsetY = wordItem.offsetY || 0;
 
-    // Use saved absolute positions if they exist, otherwise calculate
+    // Use saved absolute positions if they exist AND gap hasn't changed, otherwise calculate
     let baseWordX, baseWordY;
-    if (wordItem.absX !== undefined && wordItem.absY !== undefined) {
+    const currentGap = parseFloat(centerXOffsetInput.value) || 0;
+    const savedGap = wordItem.savedGap !== undefined ? wordItem.savedGap : 0;
+    
+    // Only use saved absolute positions if the gap setting hasn't changed since they were saved
+    if (wordItem.absX !== undefined && wordItem.absY !== undefined && Math.abs(currentGap - savedGap) < 0.01) {
       baseWordX = wordItem.absX;
       baseWordY = wordItem.absY;
     } else {
       baseWordX = currentX + offsetX;
       baseWordY = currentY + offsetY;
+      // Save the current gap value with this word so we know if it changes later
+      wordItem.savedGap = currentGap;
     }
 
     let charX = baseWordX;
@@ -206,7 +213,8 @@ function buildWordStructuresFromAudio(wordsData) {
       animY: baseWordY,
       targetX: baseWordX,
       targetY: baseWordY,
-      rotation: wordItem.rotation || 0
+      rotation: wordItem.rotation || 0,
+      savedGap: currentGap
     });
 
     // Apply word gap after each word (except the last one)

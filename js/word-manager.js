@@ -159,6 +159,7 @@ window.resetWordPosition = function (index) {
   if (activeWordsData[index]) {
     delete activeWordsData[index].absX;
     delete activeWordsData[index].absY;
+    delete activeWordsData[index].savedGap; // Also clear saved gap value
     saveState();
     buildWordStructuresFromAudio(activeWordsData);
     drawFrameAtCurrentTime();
@@ -253,6 +254,7 @@ document.getElementById('resetLayoutBtn').addEventListener('click', () => {
     delete w.offsetX;
     delete w.offsetY;
     delete w.rotation;
+    delete w.savedGap; // Also clear saved gap value
   });
 
   // 2. Reset all slider values to their defaults

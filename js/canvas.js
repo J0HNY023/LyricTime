@@ -99,6 +99,9 @@ function clampWordToBounds(wordObj) {
   if (wordObj.dataIndex !== -1 && activeWordsData[wordObj.dataIndex]) {
     activeWordsData[wordObj.dataIndex].absX = wordObj.x;
     activeWordsData[wordObj.dataIndex].absY = wordObj.y;
+    // Also save the current gap value so we know when it changes
+    const currentGap = parseFloat(centerXOffsetInput?.value) || 0;
+    activeWordsData[wordObj.dataIndex].savedGap = currentGap;
   }
 }
 
