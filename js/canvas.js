@@ -83,6 +83,25 @@ function clampWordToBounds(wordObj) {
   }
 }
 
+// New function to clamp all words to bounds (called from reset settings)
+function clampAllWordsToScreen() {
+  wordObjects.forEach(wordObj => clampWordToBounds(wordObj));
+  if (isAudioSyncMode) {
+    buildWordStructuresFromAudio(activeWordsData);
+  } else {
+    buildWordStructures();
+  }
+  drawFrameAtCurrentTime();
+}
+
+// Clamp button handler
+const clampToScreenBtn = document.getElementById('clampToScreenBtn');
+if (clampToScreenBtn) {
+  clampToScreenBtn.addEventListener('click', () => {
+    clampAllWordsToScreen();
+  });
+}
+
 function getCanvasCoordinates(e) {
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width / rect.width;

@@ -533,6 +533,7 @@ canvas.addEventListener('pointerdown', (e) => {
     }
 
     // Check for rotation mode (Ctrl + Alt), resize mode (Alt only), or drag mode
+    // Only allow resize/rotate when Alt is pressed
     if (isCtrlDown && isAltDown) {
       isRotating = true;
       rotateStartX = coords.x;
@@ -555,6 +556,7 @@ canvas.addEventListener('pointerdown', (e) => {
         idx: idx, startX: wordObjects[idx].x, startY: wordObjects[idx].y, startScale: wordObjects[idx].scale || 1.0
       }));
       // Check for rotation mode (Ctrl + Alt), resize mode (Alt only), or drag mode
+      // Only allow resize/rotate when Alt is pressed
       if (isCtrlDown && isAltDown) {
         isRotating = true;
         rotateStartX = coords.x;
@@ -660,6 +662,7 @@ canvas.addEventListener('pointermove', (e) => {
   }
   
   // 1b. Active rotation (Ctrl + Alt + Drag horizontally)
+  // Only allow rotation when both Ctrl and Alt are pressed AND hovering on rotate icon or selected word
   if (draggedWordIndex !== -1 && isAltDown && e.ctrlKey) {
     const dx = coords.x - dragStartX;
     dragStartStates.forEach(state => {

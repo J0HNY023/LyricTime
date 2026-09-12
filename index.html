@@ -156,6 +156,12 @@
       </div>
 
       <button id="processAudioBtn" class="btn-primary" style="background:#00e5ff; color:#000;" aria-label="Synchronize audio file and transcribe using Groq Whisper">Sync Audio & Transcribe</button>
+      
+      <div class="form-group" style="margin-top: 10px; border-top: 1px solid #2a2a3a; padding-top: 10px;">
+        <button id="clampToScreenBtn" class="btn-primary" style="background:#2a2a3a; color:#fff; border:1px solid #3a3a4a; font-size:0.7rem; padding:6px 10px; width:100%;" aria-label="Clamp all words to stay within canvas bounds">
+          ⟂ Clamp Words to Screen
+        </button>
+      </div>
       </div><!-- End animationControlsPanel -->
 
       <h2>Typography & FX</h2>
@@ -243,37 +249,37 @@
 
         <div class="form-group">
           <label for="centerXOffset">Word Spacing Gap <span id="centerXOffsetVal">0px</span></label>
-          <input type="range" id="centerXOffset" name="centerXOffset" min="-100" max="500" step="1" value="0" data-default="0" aria-labelledby="centerXOffset" aria-valuemin="-100" aria-valuemax="500" aria-valuenow="0">
+          <input type="range" id="centerXOffset" name="centerXOffset" min="-200" max="1000" step="1" value="0" data-default="0" aria-labelledby="centerXOffset" aria-valuemin="-200" aria-valuemax="1000" aria-valuenow="0">
         </div>
 
         <div class="form-group">
           <label for="fontScale">Font Scale <span id="fontScaleVal">1.0x</span></label>
-          <input type="range" id="fontScale" name="fontScale" min="0.2" max="5.0" step="0.1" value="1.0" data-default="1.0" aria-labelledby="fontScale" aria-valuemin="0.2" aria-valuemax="5.0" aria-valuenow="1.0">
+          <input type="range" id="fontScale" name="fontScale" min="0.1" max="10.0" step="0.1" value="1.0" data-default="1.0" aria-labelledby="fontScale" aria-valuemin="0.1" aria-valuemax="10.0" aria-valuenow="1.0">
         </div>
 
         <div class="form-group">
           <label for="letterSpacing">Tracking (letter spacing)<span id="trackingVal">12px</span></label>
-          <input type="range" id="letterSpacing" name="letterSpacing" min="0" max="100" step="1" value="12" data-default="12" aria-labelledby="letterSpacing" aria-valuemin="0" aria-valuemax="100" aria-valuenow="12">
+          <input type="range" id="letterSpacing" name="letterSpacing" min="0" max="200" step="1" value="12" data-default="12" aria-labelledby="letterSpacing" aria-valuemin="0" aria-valuemax="200" aria-valuenow="12">
         </div>
 
         <div class="form-group">
           <label for="staggerDelay">Text Stagger Delay <span id="staggerVal">0.35s</span></label>
-          <input type="range" id="staggerDelay" name="staggerDelay" min="0.0" max="2.0" step="0.05" value="0.35" data-default="0.35" aria-labelledby="staggerDelay" aria-valuemin="0.0" aria-valuemax="2.0" aria-valuenow="0.35">
+          <input type="range" id="staggerDelay" name="staggerDelay" min="0.0" max="5.0" step="0.05" value="0.35" data-default="0.35" aria-labelledby="staggerDelay" aria-valuemin="0.0" aria-valuemax="5.0" aria-valuenow="0.35">
         </div>
 
         <div class="form-group">
           <label for="wordLife">Text Word Duration <span id="wordLifeVal">2.5s</span></label>
-          <input type="range" id="wordLife" name="wordLife" min="0.5" max="10.0" step="0.5" value="2.5" data-default="2.5" aria-labelledby="wordLife" aria-valuemin="0.5" aria-valuemax="10.0" aria-valuenow="2.5">
+          <input type="range" id="wordLife" name="wordLife" min="0.1" max="20.0" step="0.1" value="2.5" data-default="2.5" aria-labelledby="wordLife" aria-valuemin="0.1" aria-valuemax="20.0" aria-valuenow="2.5">
         </div>
 
         <div class="form-group">
           <label for="fadeOutDelay">Fade Out Delay <span id="fadeOutDelayVal">0.0s</span></label>
-          <input type="range" id="fadeOutDelay" name="fadeOutDelay" min="0.0" max="5.0" step="0.1" value="0.0" data-default="0.0" aria-labelledby="fadeOutDelay" aria-valuemin="0.0" aria-valuemax="5.0" aria-valuenow="0.0">
+          <input type="range" id="fadeOutDelay" name="fadeOutDelay" min="0.0" max="10.0" step="0.1" value="0.0" data-default="0.0" aria-labelledby="fadeOutDelay" aria-valuemin="0.0" aria-valuemax="10.0" aria-valuenow="0.0">
         </div>
 
         <div class="form-group">
           <label for="driftSpeed">Upward Drift Speed <span id="driftVal">0.4</span></label>
-          <input type="range" id="driftSpeed" name="driftSpeed" min="0.0" max="5.0" step="0.1" value="0.4" data-default="0.4" aria-labelledby="driftSpeed" aria-valuemin="0.0" aria-valuemax="5.0" aria-valuenow="0.4">
+          <input type="range" id="driftSpeed" name="driftSpeed" min="0.0" max="10.0" step="0.1" value="0.4" data-default="0.4" aria-labelledby="driftSpeed" aria-valuemin="0.0" aria-valuemax="10.0" aria-valuenow="0.4">
         </div>
 
         <div class="form-group">
