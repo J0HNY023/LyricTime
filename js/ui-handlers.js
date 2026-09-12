@@ -760,6 +760,7 @@ canvas.addEventListener('pointermove', (e) => {
 
     selectedWordIndices.forEach(idx => {
       const obj = wordObjects[idx];
+      if (!obj) return; // Skip if object doesn't exist
       const wordScale = obj.scale || 1.0;
       const scaledFontSize = baseFontSize * wordScale;
       const scaledWidth = (obj.baseWidth || obj.width) * wordScale;
