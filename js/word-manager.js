@@ -211,7 +211,7 @@ window.shiftAllTimestamps = function (direction) {
   localStorage.setItem('shiftAllAmount', Math.abs(amount).toFixed(2));
 };
 
-// --- Reset Layout Logic ---
+// --- Reset Settings Logic ---
 document.getElementById('resetLayoutBtn').addEventListener('click', () => {
   // 1. Clear all custom positions, offsets, and scales from the data model
   activeWordsData.forEach(w => {
@@ -220,30 +220,79 @@ document.getElementById('resetLayoutBtn').addEventListener('click', () => {
     delete w.scale;
     delete w.offsetX;
     delete w.offsetY;
+    delete w.rotation;
   });
 
-  // 2. Save the clean state
+  // 2. Reset all slider values to their defaults
+  const sliders = document.querySelectorAll('input[type="range"][data-default]');
+  sliders.forEach(slider => {
+    const defaultValue = slider.getAttribute('data-default');
+    slider.value = defaultValue;
+    
+    // Trigger input event to update labels and canvas
+    slider.dispatchEvent(new Event('input'));
+  });
+
+  // 3. Reset select dropdowns to their defaults
+  const layoutModeSelect = document.getElementById('layoutMode');
+  if (layoutModeSelect) {
+    layoutModeSelect.value = 'standard';
+    layoutModeSelect.dispatchEvent(new Event('change'));
+  }
+
+  const fontStyleSelect = document.getElementById('fontStyle');
+  if (fontStyleSelect) {
+    fontStyleSelect.selectedIndex = 0; // Default to first option
+    fontStyleSelect.dispatchEvent(new Event('change'));
+  }
+
+  const textEffectSelect = document.getElementById('textEffect');
+  if (textEffectSelect) {
+    textEffectSelect.value = 'none';
+    textEffectSelect.dispatchEvent(new Event('change'));
+  }
+
+  // 4. Reset checkboxes to unchecked state
+  const autoAlignCheckbox = document.getElementById('autoAlign');
+  if (autoAlignCheckbox) {
+    autoAlignCheckbox.checked = false;
+    autoAlignCheckbox.dispatchEvent(new Event('change'));
+  }
+
+  const capitalizeTextCheckbox = document.getElementById('capitalizeText');
+  if (capitalizeTextCheckbox) {
+    capitalizeTextCheckbox.checked = false;
+    capitalizeTextCheckbox.dispatchEvent(new Event('change'));
+  }
+
+  const debugModeCheckbox = document.getElementById('debugMode');
+  if (debugModeCheckbox) {
+    debugModeCheckbox.checked = false;
+    debugModeCheckbox.dispatchEvent(new Event('change'));
+  }
+
+  // 5. Save the clean state
   saveState();
 
-  // 3. Rebuild the word structures (recalculates the center grid)
+  // 6. Rebuild the word structures (recalculates the center grid)
   if (isAudioSyncMode) {
     buildWordStructuresFromAudio(activeWordsData);
   } else {
     buildWordStructures(activeWordsData);
   }
 
-  // 4. Redraw the canvas to show the reset positions immediately
+  // 7. Redraw the canvas to show the reset positions immediately
   if (typeof drawFrameAtCurrentTime === 'function') {
     drawFrameAtCurrentTime();
   }
 
-  // 5. Provide visual feedback
+  // 8. Provide visual feedback
   const btn = document.getElementById('resetLayoutBtn');
   const originalText = btn.textContent;
-  btn.textContent = '✓ Layout Reset!';
+  btn.textContent = '✓ Settings Reset!';
   btn.style.background = '#1a4a1a';
   setTimeout(() => {
-    btn.textContent = originalText;
+    btn.textContent = '↺ Reset Settings';
     btn.style.background = '#333';
   }, 1500);
 });
@@ -279,5 +328,38 @@ if (toggleAdvancedBtn && advancedSettingsPanel) {
     advancedSettingsPanel.removeAttribute('hidden');
     toggleAdvancedBtn.innerHTML = '⚙ Advanced Settings ▲';
     toggleAdvancedBtn.setAttribute('aria-expanded', 'true');
+  }
+}
+
+// --- Animation Controls Panel Toggle Logic ---
+const animationControlsToggle = document.getElementById('animationControlsToggle');
+const animationControlsPanel = document.getElementById('animationControlsPanel');
+
+if (animationControlsToggle && animationControlsPanel) {
+  animationControlsToggle.addEventListener('click', () => {
+    const isExpanded = animationControlsToggle.getAttribute('aria-expanded') !== 'false';
+    const newState = !isExpanded;
+    
+    // Update ARIA attributes
+    animationControlsToggle.setAttribute('aria-expanded', newState.toString());
+    
+    // Toggle visibility
+    if (newState) {
+      animationControlsPanel.style.display = 'block';
+      animationControlsToggle.innerHTML = '⚙';
+    } else {
+      animationControlsPanel.style.display = 'none';
+      animationControlsToggle.innerHTML = '⚙';
+    }
+    
+    // Save preference to localStorage
+    localStorage.setItem('animationControlsExpanded', newState.toString());
+  });
+
+  // Restore user's last preference on load
+  const wasExpanded = localStorage.getItem('animationControlsExpanded') !== 'false';
+  if (!wasExpanded) {
+    animationControlsPanel.style.display = 'none';
+    animationControlsToggle.setAttribute('aria-expanded', 'false');
   }
 }
