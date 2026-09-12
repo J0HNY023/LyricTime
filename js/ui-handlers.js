@@ -81,25 +81,7 @@ centerXOffsetInput.addEventListener('input', () => {
   centerXOffsetVal.textContent = `${centerXOffsetInput.value}px`;
   saveState();
   
-  // If there are selected words with absolute positions, adjust their positions based on the gap change
-  const gapChange = parseFloat(centerXOffsetInput.value) - (parseFloat(centerXOffsetInput.dataset.lastValue || 0));
-  centerXOffsetInput.dataset.lastValue = centerXOffsetInput.value;
-  
-  if (selectedWordIndices.length > 0 && gapChange !== 0) {
-    // Adjust absolute positions of selected words based on gap change
-    selectedWordIndices.forEach(idx => {
-      const obj = wordObjects[idx];
-      if (obj && obj.dataIndex !== -1 && activeWordsData[obj.dataIndex]) {
-        // Only adjust if the word has been manually positioned (has absX)
-        if (obj.absX !== undefined) {
-          obj.x += gapChange;
-          obj.absX += gapChange;
-          activeWordsData[obj.dataIndex].absX = obj.absX;
-        }
-      }
-    });
-  }
-  
+  // Rebuild layout with new gap value - this applies to ALL words
   if (isAudioSyncMode) {
     buildWordStructuresFromAudio(activeWordsData);
   } else {
@@ -488,6 +470,9 @@ function getGroupBoundingBox(indices) {
 
   indices.forEach(idx => {
     const obj = wordObjects[idx];
+    // Skip undefined or invalid objects
+    if (!obj || typeof obj.scale === 'undefined') return;
+
     const wordScale = obj.scale || 1.0;
     const scaledFontSize = baseFontSize * wordScale;
     const scaledWidth = (obj.baseWidth || obj.width) * wordScale;
@@ -503,6 +488,10 @@ function getGroupBoundingBox(indices) {
     maxX = Math.max(maxX, boxX + scaledWidth + padding * 2);
     maxY = Math.max(maxY, boxY + scaledFontSize + padding * 2);
   });
+
+  // If no valid words were processed, return null
+  if (minX === Infinity) return null;
+
   return { minX, minY, maxX, maxY };
 }
 
