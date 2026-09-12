@@ -490,8 +490,8 @@ function getGroupBoundingBox(indices) {
 canvas.addEventListener('pointerdown', (e) => {
   const coords = getCanvasCoordinates(e);
 
-  // 1. Marquee Selection (Ctrl + Drag)
-  if (e.ctrlKey) {
+  // 1. Marquee Selection (Ctrl + Drag, but NOT when Alt is also pressed for rotation)
+  if (e.ctrlKey && !e.altKey) {
     e.preventDefault();
     isMarqueeSelecting = true;
     marqueeStartX = coords.x;

@@ -597,3 +597,108 @@ input[type="range"] {
   max-height: 0;
   padding: 0 8px;
 }
+
+/* ==========================================================================
+   Toggle Switch Styles
+   ========================================================================== */
+.toggle-label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: #e6e6ea;
+  user-select: none;
+}
+
+.toggle-label input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: relative;
+  width: 36px;
+  height: 18px;
+  background-color: #2a2a3a;
+  border-radius: 18px;
+  margin-left: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  height: 14px;
+  width: 14px;
+  left: 2px;
+  bottom: 2px;
+  background-color: #fff;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+}
+
+.toggle-label input:checked + .toggle-slider {
+  background-color: #00e5ff;
+}
+
+.toggle-label input:checked + .toggle-slider::before {
+  transform: translateX(18px);
+}
+
+/* ==========================================================================
+   Custom File Upload Styles
+   ========================================================================== */
+.upload-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.custom-file-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #e94560;
+  border: 1px solid #0f3460;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.custom-file-upload:hover {
+  background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
+  border-color: #e94560;
+  box-shadow: 0 4px 12px rgba(233, 69, 96, 0.3);
+  transform: translateY(-1px);
+}
+
+.custom-file-upload i {
+  font-size: 0.9rem;
+}
+
+.upload-container input[type="file"] {
+  position: absolute;
+  width: 0.1px;
+  height: 0.1px;
+  opacity: 0;
+  overflow: hidden;
+  z-index: -1;
+}
+
+.file-name {
+  font-size: 0.75rem;
+  color: #8a8a98;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

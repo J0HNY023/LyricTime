@@ -92,12 +92,24 @@ function clampAllWordsToScreen() {
   drawFrameAtCurrentTime();
 }
 
-// Clamp button handler
-const clampToScreenBtn = document.getElementById('clampToScreenBtn');
-if (clampToScreenBtn) {
-  clampToScreenBtn.addEventListener('click', () => {
-    clampAllWordsToScreen();
+// Clamp toggle handler - limits selected words to screen bounds
+const clampToScreenToggle = document.getElementById('clampToScreenToggle');
+if (clampToScreenToggle) {
+  // Load saved state
+  const savedClampState = localStorage.getItem('clampToScreenEnabled') === 'true';
+  clampToScreenToggle.checked = savedClampState;
+  
+  clampToScreenToggle.addEventListener('change', () => {
+    localStorage.setItem('clampToScreenEnabled', clampToScreenToggle.checked);
+    if (clampToScreenToggle.checked) {
+      clampAllWordsToScreen();
+    }
   });
+  
+  // Apply initial state if enabled
+  if (savedClampState) {
+    clampAllWordsToScreen();
+  }
 }
 
 function getCanvasCoordinates(e) {
