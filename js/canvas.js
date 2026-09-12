@@ -105,6 +105,7 @@ function clampWordToBounds(wordObj) {
 // Clamp all words to screen bounds
 function clampAllWordsToScreen() {
   if (!isClampToScreenEnabled()) return;
+  if (typeof drawFrameAtCurrentTime !== 'function') return;
   
   wordObjects.forEach(wordObj => clampWordToBounds(wordObj));
   drawFrameAtCurrentTime();
@@ -119,14 +120,18 @@ if (clampToScreenToggle) {
   
   clampToScreenToggle.addEventListener('change', () => {
     localStorage.setItem('clampToScreenEnabled', clampToScreenToggle.checked);
-    if (clampToScreenToggle.checked) {
+    if (clampToScreenToggle.checked && typeof drawFrameAtCurrentTime === 'function') {
       clampAllWordsToScreen();
     }
   });
   
-  // Apply initial state if enabled
+  // Apply initial state if enabled (defer until main.js has loaded)
   if (savedClampState) {
-    clampAllWordsToScreen();
+    setTimeout(() => {
+      if (typeof drawFrameAtCurrentTime === 'function') {
+        clampAllWordsToScreen();
+      }
+    }, 100);
   }
 }
 
