@@ -25,7 +25,7 @@ window.toggleTimestampSelection = function(index, event) {
   isAllSelected = selectedTimestampIndices.length === activeWordsData.length;
   
   renderTimestampEditorUI();
-  drawFrameAtCurrentTime();
+  if (typeof drawFrameAtCurrentTime === 'function') drawFrameAtCurrentTime();
 };
 
 window.selectAllTimestamps = function() {
@@ -33,7 +33,7 @@ window.selectAllTimestamps = function() {
   renderTimestampEditorUI();
   // Also sync with canvas selection
   selectedWordIndices = [...selectedTimestampIndices];
-  drawFrameAtCurrentTime();
+  if (typeof drawFrameAtCurrentTime === 'function') drawFrameAtCurrentTime();
 };
 
 window.deselectAllTimestamps = function() {
@@ -42,7 +42,7 @@ window.deselectAllTimestamps = function() {
   // Also sync with canvas selection
   selectedWordIndices = [];
   isAllSelected = false;
-  drawFrameAtCurrentTime();
+  if (typeof drawFrameAtCurrentTime === 'function') drawFrameAtCurrentTime();
 };
 
 window.batchShiftTimestamps = function(direction) {
@@ -64,8 +64,8 @@ window.batchShiftTimestamps = function(direction) {
   
   saveState();
   renderTimestampEditorUI();
-  buildWordStructuresFromAudio(activeWordsData);
-  drawFrameAtCurrentTime();
+  if (typeof buildWordStructuresFromAudio === 'function') buildWordStructuresFromAudio(activeWordsData);
+  if (typeof drawFrameAtCurrentTime === 'function') drawFrameAtCurrentTime();
   
   // Save the shift amount to localStorage for persistence
   localStorage.setItem('batchShiftAmount', Math.abs(amount).toFixed(2));

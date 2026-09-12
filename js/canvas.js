@@ -33,13 +33,14 @@ if (fullscreenBtn && canvasViewport) {
     setTimeout(() => {
       resizeCanvas();
 
-      if (isAudioSyncMode) {
-        buildWordStructuresFromAudio(activeWordsData);
-      } else {
-        buildWordStructures();
+      if (typeof buildWordStructuresFromAudio === 'function' && typeof buildWordStructures === 'function' && typeof drawFrameAtCurrentTime === 'function') {
+        if (isAudioSyncMode) {
+          buildWordStructuresFromAudio(activeWordsData);
+        } else {
+          buildWordStructures();
+        }
+        drawFrameAtCurrentTime();
       }
-
-      drawFrameAtCurrentTime();
     }, 100);
   });
 }
@@ -84,12 +85,14 @@ function clampWordToBounds(wordObj) {
 // New function to clamp all words to bounds (called from reset settings)
 function clampAllWordsToScreen() {
   wordObjects.forEach(wordObj => clampWordToBounds(wordObj));
-  if (isAudioSyncMode) {
-    buildWordStructuresFromAudio(activeWordsData);
-  } else {
-    buildWordStructures();
+  if (typeof buildWordStructuresFromAudio === 'function' && typeof buildWordStructures === 'function' && typeof drawFrameAtCurrentTime === 'function') {
+    if (isAudioSyncMode) {
+      buildWordStructuresFromAudio(activeWordsData);
+    } else {
+      buildWordStructures();
+    }
+    drawFrameAtCurrentTime();
   }
-  drawFrameAtCurrentTime();
 }
 
 // Clamp toggle handler - limits selected words to screen bounds

@@ -210,7 +210,7 @@ triggerBtn.addEventListener('click', () => {
 
 window.addEventListener('resize', () => {
   resizeCanvas();
-  if (!isAudioSyncMode) buildWordStructures();
+  if (typeof buildWordStructures === 'function' && !isAudioSyncMode) buildWordStructures();
 });
 
 // --- Enhanced Keyboard Controls ---

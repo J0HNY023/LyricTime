@@ -120,7 +120,7 @@ timelineSlider.addEventListener('input', () => {
 
     audioElement.currentTime = seekTime;
     updateActiveWordHighlight(seekTime);
-    drawFrameAtCurrentTime();
+    if (typeof drawFrameAtCurrentTime === 'function') drawFrameAtCurrentTime();
   }
 });
 
@@ -132,7 +132,7 @@ timelineSlider.addEventListener('change', () => {
   if (!audioElement.paused) {
     animationFrame = requestAnimationFrame(animate);
   } else {
-    drawFrameAtCurrentTime();
+    if (typeof drawFrameAtCurrentTime === 'function') drawFrameAtCurrentTime();
   }
 });
 
@@ -292,7 +292,7 @@ processAudioBtn.addEventListener('click', async () => {
     isAudioSyncMode = true;
     saveState();
     resizeCanvas();
-    buildWordStructuresFromAudio(wordTimestamps);
+    if (typeof buildWordStructuresFromAudio === 'function') buildWordStructuresFromAudio(wordTimestamps);
 
     setTimeout(async () => {
       progressOverlay.classList.remove('active');

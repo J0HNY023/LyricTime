@@ -369,7 +369,7 @@ function attachCinematicListeners() {
 // Forces a redraw/restart so slider changes are visible immediately
 function triggerPreview() {
   if (isAudioSyncMode) {
-    drawFrameAtCurrentTime();
+    if (typeof drawFrameAtCurrentTime === 'function') drawFrameAtCurrentTime();
   } else {
     startTime = null;
     cancelAnimationFrame(animationFrame);
