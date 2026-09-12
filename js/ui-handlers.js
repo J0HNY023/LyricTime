@@ -297,6 +297,9 @@ document.addEventListener('keydown', (e) => {
           if (wordObjects[idx].dataIndex !== -1 && activeWordsData[wordObjects[idx].dataIndex]) {
             activeWordsData[wordObjects[idx].dataIndex].absX = wordObjects[idx].x;
             activeWordsData[wordObjects[idx].dataIndex].absY = wordObjects[idx].y;
+            // Also save the current gap value so we know when it changes
+            const currentGap = parseFloat(centerXOffsetInput?.value) || 0;
+            activeWordsData[wordObjects[idx].dataIndex].savedGap = currentGap;
           }
         }
       });
@@ -693,6 +696,9 @@ canvas.addEventListener('pointermove', (e) => {
         if (wordObjects[state.idx].dataIndex !== -1) {
           activeWordsData[wordObjects[state.idx].dataIndex].absX = newAbsX;
           activeWordsData[wordObjects[state.idx].dataIndex].absY = newAbsY;
+          // Also save the current gap value so we know when it changes
+          const currentGap = parseFloat(centerXOffsetInput?.value) || 0;
+          activeWordsData[wordObjects[state.idx].dataIndex].savedGap = currentGap;
         }
       });
       drawFrameAtCurrentTime();
@@ -743,6 +749,9 @@ canvas.addEventListener('pointermove', (e) => {
         if (obj.dataIndex !== -1) {
           activeWordsData[obj.dataIndex].absX = newX;
           activeWordsData[obj.dataIndex].absY = newY;
+          // Also save the current gap value so we know when it changes
+          const currentGap = parseFloat(centerXOffsetInput?.value) || 0;
+          activeWordsData[obj.dataIndex].savedGap = currentGap;
         }
       }
       
