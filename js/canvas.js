@@ -57,8 +57,6 @@ function getComputedFontSize() {
 }
 
 function clampWordToBounds(wordObj) {
-  if (!autoAlignInput || !autoAlignInput.checked) return;
-
   const wordScale = wordObj.scale || 1.0;
   const scaledWidth = (wordObj.baseWidth || wordObj.width) * wordScale;
   const scaledHeight = getComputedFontSize() * wordScale; // actual text height

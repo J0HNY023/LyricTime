@@ -537,9 +537,11 @@ canvas.addEventListener('pointerdown', (e) => {
     if (isCtrlDown && isAltDown) {
       isRotating = true;
       rotateStartX = coords.x;
+      // Don't set isDragging or isResizing when rotating
     } else if (isAltDown) {
       isResizing = true;
       resizeStartX = coords.x;
+      // Don't set isDragging when resizing
     } else {
       isDragging = true;
     }
@@ -560,9 +562,11 @@ canvas.addEventListener('pointerdown', (e) => {
       if (isCtrlDown && isAltDown) {
         isRotating = true;
         rotateStartX = coords.x;
+        // Don't set isDragging or isResizing when rotating
       } else if (isAltDown) {
         isResizing = true;
         resizeStartX = coords.x;
+        // Don't set isDragging when resizing
       } else {
         isDragging = true;
       }
@@ -613,8 +617,8 @@ canvas.addEventListener('pointermove', (e) => {
     canvasTooltip.style.display = 'none';
   }
 
-  // 1. Active drag/resize
-  if (draggedWordIndex !== -1 && dragStartStates.length > 0) {
+  // 1. Active drag/resize (only if NOT rotating)
+  if (draggedWordIndex !== -1 && dragStartStates.length > 0 && !isRotating) {
     const dx = coords.x - dragStartX;
     const dy = coords.y - dragStartY;
 
@@ -663,8 +667,8 @@ canvas.addEventListener('pointermove', (e) => {
   
   // 1b. Active rotation (Ctrl + Alt + Drag horizontally)
   // Only allow rotation when both Ctrl and Alt are pressed AND hovering on rotate icon or selected word
-  if (draggedWordIndex !== -1 && isAltDown && e.ctrlKey) {
-    const dx = coords.x - dragStartX;
+  if (draggedWordIndex !== -1 && isRotating) {
+    const dx = coords.x - rotateStartX;
     dragStartStates.forEach(state => {
       let newRotation = (dx * 0.5) % 360; // 0.5 degrees per pixel
       wordObjects[state.idx].rotation = newRotation;

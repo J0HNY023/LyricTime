@@ -16,12 +16,26 @@ function renderWordChips() {
 
   const words = text.split(/\s+/);
   words.forEach((word, index) => {
-    const chip = document.createElement('div');
+  const chip = document.createElement('div');
     chip.style.cssText = `
       display:inline-flex; align-items:center; gap:4px;
-      background:#1a1a24; border:1px solid #2a2a3a;
-      padding:4px 8px; border-radius:12px; font-size:0.7rem; color:#d0d0da;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border:1px solid #0f3460;
+      padding:4px 8px; border-radius:12px; font-size:0.7rem; 
+      color:#e94560;
+      box-shadow: 0 2px 4px rgba(233, 69, 96, 0.1);
+      transition: all 0.2s ease;
     `;
+    chip.onmouseenter = () => {
+      chip.style.background = 'linear-gradient(135deg, #16213e 0%, #1a1a2e 100%)';
+      chip.style.borderColor = '#e94560';
+      chip.style.boxShadow = '0 2px 8px rgba(233, 69, 96, 0.3)';
+    };
+    chip.onmouseleave = () => {
+      chip.style.background = 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)';
+      chip.style.borderColor = '#0f3460';
+      chip.style.boxShadow = '0 2px 4px rgba(233, 69, 96, 0.1)';
+    };
 
     const wordSpan = document.createElement('span');
     wordSpan.textContent = word;
@@ -40,6 +54,24 @@ function renderWordChips() {
 
     const deleteBtn = document.createElement('button');
     deleteBtn.textContent = '✕';
+    deleteBtn.style.cssText = `
+      background: transparent;
+      border: none;
+      color: #e94560;
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 2px 4px;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    `;
+    deleteBtn.onmouseenter = () => {
+      deleteBtn.style.background = '#e94560';
+      deleteBtn.style.color = '#fff';
+    };
+    deleteBtn.onmouseleave = () => {
+      deleteBtn.style.background = 'transparent';
+      deleteBtn.style.color = '#e94560';
+    };
     deleteBtn.addEventListener('click', () => {
       const allWords = textInput.value.trim().split(/\s+/);
       allWords.splice(index, 1);
