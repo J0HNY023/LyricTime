@@ -81,6 +81,25 @@ centerXOffsetInput.addEventListener('input', () => {
   centerXOffsetVal.textContent = `${centerXOffsetInput.value}px`;
   saveState();
   
+  // If there are selected words with absolute positions, adjust their positions based on the gap change
+  const gapChange = parseFloat(centerXOffsetInput.value) - (parseFloat(centerXOffsetInput.dataset.lastValue || 0));
+  centerXOffsetInput.dataset.lastValue = centerXOffsetInput.value;
+  
+  if (selectedWordIndices.length > 0 && gapChange !== 0) {
+    // Adjust absolute positions of selected words based on gap change
+    selectedWordIndices.forEach(idx => {
+      const obj = wordObjects[idx];
+      if (obj && obj.dataIndex !== -1 && activeWordsData[obj.dataIndex]) {
+        // Only adjust if the word has been manually positioned (has absX)
+        if (obj.absX !== undefined) {
+          obj.x += gapChange;
+          obj.absX += gapChange;
+          activeWordsData[obj.dataIndex].absX = obj.absX;
+        }
+      }
+    });
+  }
+  
   if (isAudioSyncMode) {
     buildWordStructuresFromAudio(activeWordsData);
   } else {
