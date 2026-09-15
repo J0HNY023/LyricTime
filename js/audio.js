@@ -235,6 +235,76 @@ function transcribeAudioWithProgress(file, apiKey) {
   });
 }
 
+// --- WhisperX Server-side Transcription ---
+async function transcribeWithWhisperX(file) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const formData = new FormData();
+
+    formData.append('file', file);
+    formData.append('mode', 'whisperx');
+
+    let processInterval;
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const uploadPercent = Math.round((e.loaded / e.total) * 50);
+        progressBar.style.width = `${uploadPercent}%`;
+        progressText.textContent = `${uploadPercent}%`;
+        if (uploadPercent >= 50) {
+          progressTitle.textContent = 'Processing Audio with WhisperX...';
+        }
+      }
+    };
+
+    xhr.onload = () => {
+      clearInterval(processInterval);
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          progressBar.style.width = '100%';
+          progressText.textContent = '100%';
+          
+          if (data.success && data.words) {
+            resolve(data.words);
+          } else {
+            reject(new Error(data.error || 'WhisperX transcription failed'));
+          }
+        } catch (e) {
+          reject(new Error('Invalid JSON response from WhisperX server.'));
+        }
+      } else {
+        try {
+          const err = JSON.parse(xhr.responseText);
+          reject(new Error(err.error || 'Transcription failed.'));
+        } catch (e) {
+          reject(new Error(`Server returned status ${xhr.status}`));
+        }
+      }
+    };
+
+    xhr.onerror = () => {
+      clearInterval(processInterval);
+      reject(new Error('Network error during upload to WhisperX server.'));
+    };
+
+    xhr.upload.onloadend = () => {
+      let simulatedPercent = 50;
+      progressTitle.textContent = 'Transcribing with WhisperX Model...';
+      processInterval = setInterval(() => {
+        if (simulatedPercent < 95) {
+          simulatedPercent += Math.floor(Math.random() * 3) + 1;
+          progressBar.style.width = `${simulatedPercent}%`;
+          progressText.textContent = `${simulatedPercent}%`;
+        }
+      }, 200);
+    };
+
+    xhr.open('POST', '/transcribe');
+    xhr.send(formData);
+  });
+}
+
 // --- Audio File Input Handler ---
 audioUpload.addEventListener('change', async () => {
   const file = audioUpload.files[0];
@@ -270,16 +340,12 @@ processAudioBtn.addEventListener('click', async () => {
   if (!file) return alert('Please upload an audio file.');
   if (isListening) stopListening();
 
-  processAudioBtn.textContent = 'Loading API key...';
+  // Get selected transcription mode
+  const transcriptionMode = transcriptionModeSelect ? transcriptionModeSelect.value : 'groq';
+
   processAudioBtn.disabled = true;
 
   try {
-    const apiKey = await getApiKey();
-
-    if (!apiKey) {
-      throw new Error('The "api" file was empty. Please add your key into it.');
-    }
-
     progressOverlay.classList.add('active');
     progressTitle.textContent = 'Uploading Audio...';
     progressBar.style.width = '0%';
@@ -287,7 +353,22 @@ processAudioBtn.addEventListener('click', async () => {
 
     processAudioBtn.textContent = 'Transcribing...';
 
-    const wordTimestamps = await transcribeAudioWithProgress(file, apiKey);
+    let wordTimestamps;
+
+    if (transcriptionMode === 'whisperx') {
+      // Use local WhisperX server
+      wordTimestamps = await transcribeWithWhisperX(file);
+    } else {
+      // Use Groq Cloud API
+      processAudioBtn.textContent = 'Loading API key...';
+      const apiKey = await getApiKey();
+
+      if (!apiKey) {
+        throw new Error('The "api" file was empty. Please add your key into it.');
+      }
+
+      wordTimestamps = await transcribeAudioWithProgress(file, apiKey);
+    }
 
     isAudioSyncMode = true;
     saveState();

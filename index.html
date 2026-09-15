@@ -147,7 +147,19 @@
         <button id="triggerBtn" class="btn-primary" title="Generate timestamps with 0.24s spacing if audio exists" aria-label="Generate timestamps for words">Generate Timestamps</button>
       </div>
 
-      <h2>Groq Whisper Sync</h2>
+      <h2>AI Transcription</h2>
+
+      <!-- Transcription Mode Selection -->
+      <div class="form-group">
+        <label for="transcriptionMode">Transcription Model</label>
+        <select id="transcriptionMode" name="transcriptionMode" aria-describedby="transcriptionModeDesc">
+          <option value="groq" selected>Groq Whisper (Cloud API)</option>
+          <option value="whisperx">WhisperX (Local Server)</option>
+        </select>
+        <span id="transcriptionModeDesc" style="font-size:0.65rem; color:#6a6a78; display:block; margin-top:4px;">
+          Groq: Fast cloud-based transcription (requires API key). WhisperX: Local processing (requires server running).
+        </span>
+      </div>
 
       <div class="form-group">
         <label for="audioUpload">Upload Audio File</label>
@@ -161,7 +173,7 @@
         <span id="audioUploadDesc" style="position:absolute; clip:rect(0 0 0 0); overflow:hidden;">Select an audio file for transcription and synchronization</span>
       </div>
 
-      <button id="processAudioBtn" class="btn-primary" style="background:#00e5ff; color:#000;" aria-label="Synchronize audio file and transcribe using Groq Whisper">Sync Audio & Transcribe</button>
+      <button id="processAudioBtn" class="btn-primary" style="background:#00e5ff; color:#000;" aria-label="Synchronize audio file and transcribe using selected AI model">Sync Audio & Transcribe</button>
       </div><!-- End animationControlsPanel -->
       
       <div class="form-group" style="margin-top: 10px; border-top: 1px solid #2a2a3a; padding-top: 10px;">
