@@ -705,8 +705,8 @@ canvas.addEventListener('pointermove', (e) => {
           const padding = 20;
           const minX = padding;
           const maxX = canvas.width - rotWidth - padding;
-          const minY = padding + rotHeight;
-          const maxY = canvas.height - padding;
+          const minY = padding;
+          const maxY = canvas.height - rotHeight - padding;
           
           newAbsX = Math.max(minX, Math.min(newAbsX, maxX));
           newAbsY = Math.max(minY, Math.min(newAbsY, maxY));
@@ -754,8 +754,8 @@ canvas.addEventListener('pointermove', (e) => {
         const padding = 20;
         const minX = padding + rotWidth / 2;
         const maxX = canvas.width - padding - rotWidth / 2;
-        const minY = padding + rotHeight;
-        const maxY = canvas.height - padding;
+        const minY = padding;
+        const maxY = canvas.height - rotHeight - padding;
         
         // Clamp position to keep rotated word in bounds
         let newX = obj.x;
