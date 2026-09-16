@@ -14,6 +14,94 @@
    now lives in ui-handlers.js instead.
    ========================================================================== */
 
+/**
+ * Balances a line of words into multiple sub-lines for better readability.
+ * Instead of letting lines run too long, this function breaks them into
+ * visually balanced segments that avoid orphans and maintain good proportions.
+ * 
+ * @param {string[]} words - Array of words to balance
+ * @param {number} maxLineWidth - Maximum width in pixels
+ * @param {number} tracking - Letter spacing
+ * @param {number} spaceWidth - Width of space between words
+ * @returns {string[][]} Array of word arrays, each representing a balanced line
+ */
+function balanceLineForReadability(words, maxLineWidth, tracking, spaceWidth) {
+  if (words.length === 0) return [];
+  
+  // Target line length: aim for 60-75% of max width for optimal readability
+  const targetLineWidth = maxLineWidth * 0.7;
+  const minLineWidth = maxLineWidth * 0.4; // Don't break unless we exceed this
+  
+  // Calculate approximate width of all words
+  let totalWidth = 0;
+  const wordWidths = words.map(word => {
+    let w = 0;
+    ctx.font || (ctx.font = '16px Inter'); // Ensure font is set
+    word.split('').forEach(char => {
+      w += ctx.measureText(char).width + tracking;
+    });
+    return w;
+  });
+  
+  wordWidths.forEach((w, i) => {
+    totalWidth += w;
+    if (i < words.length - 1) totalWidth += spaceWidth;
+  });
+  
+  // If the line fits comfortably, no need to break it
+  if (totalWidth <= targetLineWidth) {
+    return [words];
+  }
+  
+  // Break into multiple balanced lines
+  const lines = [];
+  let currentLine = [];
+  let currentWidth = 0;
+  
+  for (let i = 0; i < words.length; i++) {
+    const wordWidth = wordWidths[i];
+    const newWidth = currentWidth + wordWidth + (currentLine.length > 0 ? spaceWidth : 0);
+    
+    // If adding this word would exceed target and we have words already
+    if (newWidth > targetLineWidth && currentLine.length > 0) {
+      // Check if current line is reasonably long (avoid very short lines)
+      if (currentWidth >= minLineWidth) {
+        lines.push(currentLine);
+        currentLine = [words[i]];
+        currentWidth = wordWidth;
+      } else {
+        // Current line is too short, try to add more words even if slightly over target
+        currentLine.push(words[i]);
+        currentWidth = newWidth;
+      }
+    } else {
+      currentLine.push(words[i]);
+      currentWidth = newWidth;
+    }
+  }
+  
+  // Handle remaining words
+  if (currentLine.length > 0) {
+    // If last line is very short and previous line exists, try to merge
+    if (lines.length > 0 && currentWidth < minLineWidth) {
+      const prevLine = lines[lines.length - 1];
+      const combinedWidth = currentWidth + spaceWidth + wordWidths[wordWidths.length - prevLine.length - 1];
+      
+      // If moving last word from prev line makes both lines more balanced, do it
+      if (combinedWidth <= targetLineWidth * 1.3) {
+        // Keep as separate lines but accept the short line
+        lines.push(currentLine);
+      } else {
+        lines.push(currentLine);
+      }
+    } else {
+      lines.push(currentLine);
+    }
+  }
+  
+  return lines;
+}
+
 function buildWordStructures() {
   wordObjects = [];
   const rawLines = textInput.value.split('\n');
@@ -46,100 +134,89 @@ function buildWordStructures() {
   rawLines.forEach((lineText, lineIndex) => {
     const words = lineText.trim().split(/\s+/).filter(w => w.length > 0);
     
-    // Calculate total width of all words on this line to center it
-    let totalLineWidth = 0;
-    words.forEach(wordText => {
-      let wWidth = 0;
-      wordText.split('').forEach(char => {
-        wWidth += ctx.measureText(char).width + tracking;
-      });
-      totalLineWidth += wWidth;
-    });
-    // Add gaps between words
-    if (words.length > 1) {
-      totalLineWidth += (words.length - 1) * effectiveSpaceWidth;
-    }
+    // IMPROVED LINE BALANCING: Instead of using hard newlines only,
+    // we break long lines into multiple balanced sub-lines for better readability
+    const subLines = balanceLineForReadability(words, maxLineWidth, tracking, effectiveSpaceWidth);
     
-    // Start X position centered on canvas
-    let currentX = (canvas.width / 2) - (totalLineWidth / 2);
-    let wordIdx = 0;
-
-    words.forEach((wordText, idx) => {
-      let wWidth = 0;
-      wordText.split('').forEach(char => {
-        wWidth += ctx.measureText(char).width + tracking;
-      });
-
-      // WRAP LOGIC: If word exceeds canvas width, move to next line
-      if (currentX + wWidth > canvas.width - padding && currentX > padding) {
-        // Recalculate centered position for new line
-        currentX = (canvas.width / 2) - (totalLineWidth / 2);
-        currentY += lineHeight;
-      }
-
-      // Prevent bottom overflow by wrapping to top if needed
-      if (currentY + fontSize > canvas.height - padding) {
-        currentY = padding + fontSize;
-        // Recalculate centered position for new line after wrap
-        let remainingWords = words.slice(idx);
-        let remainingLineWidth = 0;
-        remainingWords.forEach(wordText => {
-          let wWidth = 0;
-          wordText.split('').forEach(char => {
-            wWidth += ctx.measureText(char).width + tracking;
-          });
-          remainingLineWidth += wWidth;
+    subLines.forEach((subLineWords, subIndex) => {
+      if (subLineWords.length === 0) return;
+      
+      // Calculate total width of words in this sub-line to center it
+      let totalSubLineWidth = 0;
+      subLineWords.forEach(wordText => {
+        let wWidth = 0;
+        wordText.split('').forEach(char => {
+          wWidth += ctx.measureText(char).width + tracking;
         });
-        if (remainingWords.length > 1) {
-          remainingLineWidth += (remainingWords.length - 1) * effectiveSpaceWidth;
+        totalSubLineWidth += wWidth;
+      });
+      // Add gaps between words
+      if (subLineWords.length > 1) {
+        totalSubLineWidth += (subLineWords.length - 1) * effectiveSpaceWidth;
+      }
+      
+      // Start X position centered on canvas
+      let currentX = (canvas.width / 2) - (totalSubLineWidth / 2);
+      let wordIdx = 0;
+
+      subLineWords.forEach((wordText, idx) => {
+        let wWidth = 0;
+        wordText.split('').forEach(char => {
+          wWidth += ctx.measureText(char).width + tracking;
+        });
+
+        const startTimeOffset = globalWordIndex * staggerDelay;
+        const particles = [];
+        const displayText = getDisplayText(wordText);
+        const chars = displayText.split('');
+        let charX = currentX;
+
+        chars.forEach(char => {
+          const charWidth = ctx.measureText(char).width;
+          particles.push(...generateParticles(charWidth, currentX, charX, fontSize, tracking));
+          charX += charWidth + tracking;
+        });
+
+        wordObjects.push({
+          text: displayText,
+          x: currentX,
+          y: currentY,
+          baseX: currentX,
+          baseY: currentY,
+          width: wWidth,
+          baseWidth: wWidth,
+          scale: 1.0,
+          startTime: startTimeOffset,
+          duration: defaultDuration,
+          particles: particles,
+          dataIndex: -1,
+          lineIdx: lineIndex,
+          wordIdx: wordIdx,
+          animX: currentX,
+          animY: currentY,
+          targetX: currentX,
+          targetY: currentY,
+          savedGap: parseFloat(centerXOffsetInput.value) || 0
+        });
+
+        // Apply word gap after each word (except the last one on the line)
+        if (idx < subLineWords.length - 1) {
+          currentX += wWidth + effectiveSpaceWidth;
+        } else {
+          currentX += wWidth; // Last word doesn't need trailing gap
         }
-        currentX = (canvas.width / 2) - (remainingLineWidth / 2);
-      }
-
-      const startTimeOffset = globalWordIndex * staggerDelay;
-      const particles = [];
-      const displayText = getDisplayText(wordText);
-      const chars = displayText.split('');
-      let charX = currentX;
-
-      chars.forEach(char => {
-        const charWidth = ctx.measureText(char).width;
-        particles.push(...generateParticles(charWidth, currentX, charX, fontSize, tracking));
-        charX += charWidth + tracking;
+        globalWordIndex++;
+        wordIdx++;
       });
-
-      wordObjects.push({
-        text: displayText,
-        x: currentX,
-        y: currentY,
-        baseX: currentX,
-        baseY: currentY,
-        width: wWidth,
-        baseWidth: wWidth,
-        scale: 1.0,
-        startTime: startTimeOffset,
-        duration: defaultDuration,
-        particles: particles,
-        dataIndex: -1,
-        lineIdx: lineIndex,
-        wordIdx: wordIdx,
-        animX: currentX,
-        animY: currentY,
-        targetX: currentX,
-        targetY: currentY,
-        savedGap: parseFloat(centerXOffsetInput.value) || 0
-      });
-
-      // Apply word gap after each word (except the last one on the line)
-      if (idx < words.length - 1) {
-        currentX += wWidth + effectiveSpaceWidth;
-      } else {
-        currentX += wWidth; // Last word doesn't need trailing gap
+      
+      // Move to next sub-line (with slightly reduced spacing for visual grouping)
+      if (subIndex < subLines.length - 1) {
+        currentY += lineHeight * 0.9;
       }
-      globalWordIndex++;
-      wordIdx++;
     });
-    currentY += lineHeight; // Hard line break
+    
+    // After all sub-lines, add normal line spacing
+    currentY += lineHeight;
   });
 
   // Clamp all words to safe area after positioning
