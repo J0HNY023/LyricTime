@@ -30,8 +30,10 @@ function buildWordStructures() {
 
   const padding = 20;
   const maxLineWidth = canvas.width - (padding * 2);
-  let currentY = padding + fontSize;
-
+  
+  // Start at the center of the canvas for all layout modes
+  let currentY = (canvas.height / 2) - (fontSize / 2);
+  
   if (layoutModeInput.value === 'subtitle') {
     // Start near the bottom and let the standard wrap logic take over
     currentY = canvas.height - padding - (fontSize * 2);
@@ -43,7 +45,23 @@ function buildWordStructures() {
 
   rawLines.forEach((lineText, lineIndex) => {
     const words = lineText.trim().split(/\s+/).filter(w => w.length > 0);
-    let currentX = padding;
+    
+    // Calculate total width of all words on this line to center it
+    let totalLineWidth = 0;
+    words.forEach(wordText => {
+      let wWidth = 0;
+      wordText.split('').forEach(char => {
+        wWidth += ctx.measureText(char).width + tracking;
+      });
+      totalLineWidth += wWidth;
+    });
+    // Add gaps between words
+    if (words.length > 1) {
+      totalLineWidth += (words.length - 1) * effectiveSpaceWidth;
+    }
+    
+    // Start X position centered on canvas
+    let currentX = (canvas.width / 2) - (totalLineWidth / 2);
     let wordIdx = 0;
 
     words.forEach((wordText, idx) => {
@@ -53,13 +71,30 @@ function buildWordStructures() {
       });
 
       // WRAP LOGIC: If word exceeds canvas width, move to next line
-      if (currentX + wWidth > maxLineWidth && currentX > padding) {
-        currentX = padding;
+      if (currentX + wWidth > canvas.width - padding && currentX > padding) {
+        // Recalculate centered position for new line
+        currentX = (canvas.width / 2) - (totalLineWidth / 2);
         currentY += lineHeight;
       }
 
-      // Prevent bottom overflow
-      if (currentY > canvas.height - padding) return;
+      // Prevent bottom overflow by wrapping to top if needed
+      if (currentY + fontSize > canvas.height - padding) {
+        currentY = padding + fontSize;
+        // Recalculate centered position for new line after wrap
+        let remainingWords = words.slice(idx);
+        let remainingLineWidth = 0;
+        remainingWords.forEach(wordText => {
+          let wWidth = 0;
+          wordText.split('').forEach(char => {
+            wWidth += ctx.measureText(char).width + tracking;
+          });
+          remainingLineWidth += wWidth;
+        });
+        if (remainingWords.length > 1) {
+          remainingLineWidth += (remainingWords.length - 1) * effectiveSpaceWidth;
+        }
+        currentX = (canvas.width / 2) - (remainingLineWidth / 2);
+      }
 
       const startTimeOffset = globalWordIndex * staggerDelay;
       const particles = [];
@@ -107,20 +142,36 @@ function buildWordStructures() {
     currentY += lineHeight; // Hard line break
   });
 
-  // Apply auto-alignment clamping after building
-  wordObjects.forEach(wordObj => clampWordToBounds(wordObj));
-
-  // Shift entire block to bottom for Subtitle layout
-  if (layoutModeInput && layoutModeInput.value === 'subtitle') {
-    let maxY = 0;
-    wordObjects.forEach(w => { if (w.y > maxY) maxY = w.y; });
-
-    let shiftY = (canvas.height - padding) - maxY;
-    wordObjects.forEach(w => {
-      w.y += shiftY;
-      w.baseY += shiftY;
-    });
-  }
+  // Clamp all words to safe area after positioning
+  const safePadding = 20;
+  wordObjects.forEach(word => {
+    // Clamp X position
+    if (word.x < safePadding) {
+      word.x = safePadding;
+      word.baseX = safePadding;
+      word.animX = safePadding;
+      word.targetX = safePadding;
+    }
+    if (word.x + word.width > canvas.width - safePadding) {
+      word.x = canvas.width - safePadding - word.width;
+      word.baseX = canvas.width - safePadding - word.width;
+      word.animX = canvas.width - safePadding - word.width;
+      word.targetX = canvas.width - safePadding - word.width;
+    }
+    // Clamp Y position
+    if (word.y < safePadding + fontSize) {
+      word.y = safePadding + fontSize;
+      word.baseY = safePadding + fontSize;
+      word.animY = safePadding + fontSize;
+      word.targetY = safePadding + fontSize;
+    }
+    if (word.y > canvas.height - safePadding) {
+      word.y = canvas.height - safePadding;
+      word.baseY = canvas.height - safePadding;
+      word.animY = canvas.height - safePadding;
+      word.targetY = canvas.height - safePadding;
+    }
+  });
 }
 
 function buildWordStructuresFromAudio(wordsData) {
@@ -139,10 +190,34 @@ function buildWordStructuresFromAudio(wordsData) {
   const lineHeight = fontSize * 2.2;
   const padding = 20;
   const maxLineWidth = canvas.width - (padding * 2);
-  let currentY = padding + fontSize;
+  
+  // Start at the center of the canvas for all layout modes
+  let currentY = (canvas.height / 2) - (fontSize / 2);
+
+  if (layoutModeInput && layoutModeInput.value === 'subtitle') {
+    // Start near the bottom and let the standard wrap logic take over
+    currentY = canvas.height - padding - (fontSize * 2);
+  }
 
   let globalIdx = 0;
-  let currentX = padding;
+  
+  // Calculate total width of all words to center them
+  let totalLineWidth = 0;
+  wordsData.forEach(wordItem => {
+    let wWidth = 0;
+    wordItem.word.trim().split('').forEach(char => {
+      wWidth += ctx.measureText(char).width + tracking;
+    });
+    totalLineWidth += wWidth;
+  });
+  // Add gaps between words
+  const wordGap = parseFloat(centerXOffsetInput.value) || 0;
+  if (wordsData.length > 1) {
+    totalLineWidth += (wordsData.length - 1) * (spaceWidth + wordGap);
+  }
+  
+  // Start X position centered on canvas
+  let currentX = (canvas.width / 2) - (totalLineWidth / 2);
 
   wordsData.forEach((wordItem, idx) => {
     const currentIndex = globalIdx++;
@@ -152,17 +227,33 @@ function buildWordStructuresFromAudio(wordsData) {
     });
 
     // Add word gap for all layout modes (not just focused-center)
-    const wordGap = parseFloat(centerXOffsetInput.value) || 0;
     const effectiveSpaceWidth = spaceWidth + wordGap;
 
     // WRAP LOGIC
-    if (currentX + wWidth > maxLineWidth && currentX > padding) {
-      currentX = padding;
+    if (currentX + wWidth > canvas.width - padding && currentX > padding) {
+      // Recalculate centered position for new line
+      currentX = (canvas.width / 2) - (totalLineWidth / 2);
       currentY += lineHeight;
     }
 
-    // Prevent bottom overflow
-    if (currentY > canvas.height - padding) return;
+    // Prevent bottom overflow by wrapping to top
+    if (currentY + fontSize > canvas.height - padding) {
+      currentY = padding + fontSize;
+      // Recalculate centered position for remaining words
+      let remainingWords = wordsData.slice(idx);
+      let remainingLineWidth = 0;
+      remainingWords.forEach(w => {
+        let wWidth = 0;
+        w.word.trim().split('').forEach(char => {
+          wWidth += ctx.measureText(char).width + tracking;
+        });
+        remainingLineWidth += wWidth;
+      });
+      if (remainingWords.length > 1) {
+        remainingLineWidth += (remainingWords.length - 1) * effectiveSpaceWidth;
+      }
+      currentX = (canvas.width / 2) - (remainingLineWidth / 2);
+    }
 
     const particles = [];
     const chars = getDisplayText(wordItem.word.trim()).split('');
@@ -235,8 +326,6 @@ function buildWordStructuresFromAudio(wordsData) {
     document.getElementById('editorToggleBtn').textContent = '▼ Collapse';
   }
 
-  wordObjects.forEach(wordObj => clampWordToBounds(wordObj));
-
   // Shift entire block to bottom for Subtitle layout
   if (layoutModeInput && layoutModeInput.value === 'subtitle') {
     let maxY = 0;
@@ -246,8 +335,40 @@ function buildWordStructuresFromAudio(wordsData) {
     wordObjects.forEach(w => {
       w.y += shiftY;
       w.baseY += shiftY;
+      w.animY += shiftY;
+      w.targetY += shiftY;
     });
   }
+  // For all layouts, ensure words are clamped to safe area
+  const safePadding = 20;
+  wordObjects.forEach(word => {
+    // Clamp X position
+    if (word.x < safePadding) {
+      word.x = safePadding;
+      word.baseX = safePadding;
+      word.animX = safePadding;
+      word.targetX = safePadding;
+    }
+    if (word.x + word.width > canvas.width - safePadding) {
+      word.x = canvas.width - safePadding - word.width;
+      word.baseX = canvas.width - safePadding - word.width;
+      word.animX = canvas.width - safePadding - word.width;
+      word.targetX = canvas.width - safePadding - word.width;
+    }
+    // Clamp Y position
+    if (word.y < safePadding + fontSize) {
+      word.y = safePadding + fontSize;
+      word.baseY = safePadding + fontSize;
+      word.animY = safePadding + fontSize;
+      word.targetY = safePadding + fontSize;
+    }
+    if (word.y > canvas.height - safePadding) {
+      word.y = canvas.height - safePadding;
+      word.baseY = canvas.height - safePadding;
+      word.animY = canvas.height - safePadding;
+      word.targetY = canvas.height - safePadding;
+    }
+  });
 }
 
 function renderFocusedCenter(elapsed, fontSize, fontStyle, tracking, driftSpeed) {

@@ -374,10 +374,11 @@ document.addEventListener('keydown', (e) => {
     }
   }
 
+  // Arrow keys for audio scrubbing (only when audio exists and not in text input)
   if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
     if (isTextInput) return;
 
-    if (audioElement.duration) {
+    if (audioElement.src && audioElement.duration) {
       e.preventDefault();
       const step = getScrubStepInSeconds();
 
@@ -393,6 +394,31 @@ document.addEventListener('keydown', (e) => {
       if (audioElement.paused) {
         drawFrameAtCurrentTime();
       }
+    }
+  }
+});
+
+// Skip Back/Forward button click handlers
+skipBackBtn.addEventListener('click', () => {
+  if (audioElement.src && audioElement.duration) {
+    const step = getScrubStepInSeconds();
+    audioElement.currentTime = Math.max(0, audioElement.currentTime - step);
+    timelineSlider.value = (audioElement.currentTime / audioElement.duration) * 100;
+    timeDisplay.textContent = `${formatTime(audioElement.currentTime)} / ${formatTime(audioElement.duration)}`;
+    if (audioElement.paused) {
+      drawFrameAtCurrentTime();
+    }
+  }
+});
+
+skipForwardBtn.addEventListener('click', () => {
+  if (audioElement.src && audioElement.duration) {
+    const step = getScrubStepInSeconds();
+    audioElement.currentTime = Math.min(audioElement.duration, audioElement.currentTime + step);
+    timelineSlider.value = (audioElement.currentTime / audioElement.duration) * 100;
+    timeDisplay.textContent = `${formatTime(audioElement.currentTime)} / ${formatTime(audioElement.duration)}`;
+    if (audioElement.paused) {
+      drawFrameAtCurrentTime();
     }
   }
 });
@@ -565,16 +591,47 @@ canvas.addEventListener('pointerdown', (e) => {
       syncRotationSlider();
     }
 
-    // Check for rotation mode (Ctrl + Alt), resize mode (Alt only), or drag mode
-    // Only allow resize/rotate when Alt is pressed
+    // Check for rotation mode (Ctrl + Alt), resize mode (Alt only + near edge), or drag mode
+    // Only allow resize/rotate when Alt is pressed AND hovering near an edge
     if (isCtrlDown && isAltDown) {
       isRotating = true;
       rotateStartX = coords.x;
       // Don't set isDragging or isResizing when rotating
     } else if (isAltDown) {
-      isResizing = true;
-      resizeStartX = coords.x;
-      // Don't set isDragging when resizing
+      // Check if we're near any edge before allowing resize
+      const obj = wordObjects[hitIndex];
+      const baseFontSize = getComputedFontSize();
+      const wordScale = obj.scale || 1.0;
+      const scaledFontSize = baseFontSize * wordScale;
+      const scaledWidth = (obj.baseWidth || obj.width) * wordScale;
+      const activeTime = isAudioSyncMode ? audioElement.currentTime : 0;
+      const driftSpeed = parseFloat(driftInput.value);
+      const currentDrift = (activeTime - obj.startTime) * driftSpeed * 10;
+      const currentY = obj.y - currentDrift;
+      
+      const padding = 2;
+      const boxX = obj.x - padding;
+      const boxY = currentY - scaledFontSize - padding;
+      const boxW = scaledWidth + (padding * 2);
+      const boxH = scaledFontSize + (padding * 2);
+      
+      const edgeThreshold = 8;
+      const nearLeft = Math.abs(coords.x - boxX) < edgeThreshold;
+      const nearRight = Math.abs(coords.x - (boxX + boxW)) < edgeThreshold;
+      const nearTop = Math.abs(coords.y - boxY) < edgeThreshold;
+      const nearBottom = Math.abs(coords.y - (boxY + boxH)) < edgeThreshold;
+      
+      if (nearLeft || nearRight || nearTop || nearBottom) {
+        isResizing = true;
+        resizeStartX = coords.x;
+        resizeStartY = coords.y;
+        // Store which edges we're near for directional resize
+        resizeHorizontal = nearLeft || nearRight;
+        resizeVertical = nearTop || nearBottom;
+        // Don't set isDragging when resizing
+      } else {
+        isDragging = true;
+      }
     } else {
       isDragging = true;
     }
@@ -597,15 +654,30 @@ canvas.addEventListener('pointerdown', (e) => {
           startRotation: wordObjects[idx].rotation || 0
         }));
       // Check for rotation mode (Ctrl + Alt), resize mode (Alt only), or drag mode
-      // Only allow resize/rotate when Alt is pressed
+      // Only allow resize/rotate when Alt is pressed AND hovering near an edge
       if (isCtrlDown && isAltDown) {
         isRotating = true;
         rotateStartX = coords.x;
         // Don't set isDragging or isResizing when rotating
       } else if (isAltDown) {
-        isResizing = true;
-        resizeStartX = coords.x;
-        // Don't set isDragging when resizing
+        // Check if we're near any edge of the group bounding box before allowing resize
+        const edgeThreshold = 8;
+        const nearLeft = Math.abs(coords.x - groupBox.minX) < edgeThreshold;
+        const nearRight = Math.abs(coords.x - groupBox.maxX) < edgeThreshold;
+        const nearTop = Math.abs(coords.y - groupBox.minY) < edgeThreshold;
+        const nearBottom = Math.abs(coords.y - groupBox.maxY) < edgeThreshold;
+        
+        if (nearLeft || nearRight || nearTop || nearBottom) {
+          isResizing = true;
+          resizeStartX = coords.x;
+          resizeStartY = coords.y;
+          // Store which edges we're near for directional resize
+          resizeHorizontal = nearLeft || nearRight;
+          resizeVertical = nearTop || nearBottom;
+          // Don't set isDragging when resizing
+        } else {
+          isDragging = true;
+        }
       } else {
         isDragging = true;
       }
@@ -687,31 +759,6 @@ canvas.addEventListener('pointermove', (e) => {
         let newAbsX = state.startX + dx;
         let newAbsY = state.startY + dy;
 
-        // Apply screen clamping if enabled
-        const obj = wordObjects[state.idx];
-        if (isClampToScreenEnabled()) {
-          const wordScale = obj.scale || 1.0;
-          const scaledWidth = (obj.baseWidth || obj.width) * wordScale;
-          const scaledHeight = getComputedFontSize() * wordScale;
-          const rotation = obj.rotation || 0;
-          
-          // Calculate bounding box considering rotation
-          const rad = rotation * Math.PI / 180;
-          const cos = Math.abs(Math.cos(rad));
-          const sin = Math.abs(Math.sin(rad));
-          const rotWidth = scaledWidth * cos + scaledHeight * sin;
-          const rotHeight = scaledWidth * sin + scaledHeight * cos;
-          
-          const padding = 20;
-          const minX = padding;
-          const maxX = canvas.width - rotWidth - padding;
-          const minY = padding;
-          const maxY = canvas.height - rotHeight - padding;
-          
-          newAbsX = Math.max(minX, Math.min(newAbsX, maxX));
-          newAbsY = Math.max(minY, Math.min(newAbsY, maxY));
-        }
-
         wordObjects[state.idx].x = newAbsX;
         wordObjects[state.idx].y = newAbsY;
 
@@ -736,46 +783,6 @@ canvas.addEventListener('pointermove', (e) => {
     const dx = coords.x - rotateStartX;
     dragStartStates.forEach(state => {
       let newRotation = (state.startRotation || 0) + (dx * 0.5); // 0.5 degrees per pixel
-      
-      // Apply screen clamping for rotation if enabled
-      if (isClampToScreenEnabled()) {
-        const obj = wordObjects[state.idx];
-        const wordScale = obj.scale || 1.0;
-        const scaledWidth = (obj.baseWidth || obj.width) * wordScale;
-        const scaledHeight = getComputedFontSize() * wordScale;
-        
-        // Calculate bounding box with new rotation
-        const rad = newRotation * Math.PI / 180;
-        const cos = Math.abs(Math.cos(rad));
-        const sin = Math.abs(Math.sin(rad));
-        const rotWidth = scaledWidth * cos + scaledHeight * sin;
-        const rotHeight = scaledWidth * sin + scaledHeight * cos;
-        
-        const padding = 20;
-        const minX = padding + rotWidth / 2;
-        const maxX = canvas.width - padding - rotWidth / 2;
-        const minY = padding;
-        const maxY = canvas.height - rotHeight - padding;
-        
-        // Clamp position to keep rotated word in bounds
-        let newX = obj.x;
-        let newY = obj.y;
-        if (newX < minX) newX = minX;
-        if (newX > maxX) newX = maxX;
-        if (newY < minY) newY = minY;
-        if (newY > maxY) newY = maxY;
-        
-        obj.x = newX;
-        obj.y = newY;
-        
-        if (obj.dataIndex !== -1) {
-          activeWordsData[obj.dataIndex].absX = newX;
-          activeWordsData[obj.dataIndex].absY = newY;
-          // Also save the current gap value so we know when it changes
-          const currentGap = parseFloat(centerXOffsetInput?.value) || 0;
-          activeWordsData[obj.dataIndex].savedGap = currentGap;
-        }
-      }
       
       wordObjects[state.idx].rotation = newRotation;
       if (wordObjects[state.idx].dataIndex !== -1) {
