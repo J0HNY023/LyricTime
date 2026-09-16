@@ -565,16 +565,47 @@ canvas.addEventListener('pointerdown', (e) => {
       syncRotationSlider();
     }
 
-    // Check for rotation mode (Ctrl + Alt), resize mode (Alt only), or drag mode
-    // Only allow resize/rotate when Alt is pressed
+    // Check for rotation mode (Ctrl + Alt), resize mode (Alt only + near edge), or drag mode
+    // Only allow resize/rotate when Alt is pressed AND hovering near an edge
     if (isCtrlDown && isAltDown) {
       isRotating = true;
       rotateStartX = coords.x;
       // Don't set isDragging or isResizing when rotating
     } else if (isAltDown) {
-      isResizing = true;
-      resizeStartX = coords.x;
-      // Don't set isDragging when resizing
+      // Check if we're near any edge before allowing resize
+      const obj = wordObjects[hitIndex];
+      const baseFontSize = getComputedFontSize();
+      const wordScale = obj.scale || 1.0;
+      const scaledFontSize = baseFontSize * wordScale;
+      const scaledWidth = (obj.baseWidth || obj.width) * wordScale;
+      const activeTime = isAudioSyncMode ? audioElement.currentTime : 0;
+      const driftSpeed = parseFloat(driftInput.value);
+      const currentDrift = (activeTime - obj.startTime) * driftSpeed * 10;
+      const currentY = obj.y - currentDrift;
+      
+      const padding = 2;
+      const boxX = obj.x - padding;
+      const boxY = currentY - scaledFontSize - padding;
+      const boxW = scaledWidth + (padding * 2);
+      const boxH = scaledFontSize + (padding * 2);
+      
+      const edgeThreshold = 8;
+      const nearLeft = Math.abs(coords.x - boxX) < edgeThreshold;
+      const nearRight = Math.abs(coords.x - (boxX + boxW)) < edgeThreshold;
+      const nearTop = Math.abs(coords.y - boxY) < edgeThreshold;
+      const nearBottom = Math.abs(coords.y - (boxY + boxH)) < edgeThreshold;
+      
+      if (nearLeft || nearRight || nearTop || nearBottom) {
+        isResizing = true;
+        resizeStartX = coords.x;
+        resizeStartY = coords.y;
+        // Store which edges we're near for directional resize
+        resizeHorizontal = nearLeft || nearRight;
+        resizeVertical = nearTop || nearBottom;
+        // Don't set isDragging when resizing
+      } else {
+        isDragging = true;
+      }
     } else {
       isDragging = true;
     }
