@@ -239,7 +239,7 @@ function renderCinematicWord(wordObj, elapsed, fontSize, fontStyle, tracking, dr
 
 function buildCinematicUI() {
   effectSettingsContainer.style.display = 'block';
-  effectSettingsContainer.innerHTML = `
+  effectSettingsContainer.innerHTML += `
     <h2 style="font-size:0.9rem; color:#00e5ff; margin-bottom:10px;">Cinematic Glitch Settings</h2>
 
     <div class="cinematic-group">
