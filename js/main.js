@@ -149,5 +149,13 @@ async function startAnimation() {
 (async function init() {
   await loadState();
   updateLabels();
+  
+  // Build word structures after loading state (or defaults)
+  if (isAudioSyncMode && activeWordsData && activeWordsData.length > 0) {
+    buildWordStructuresFromAudio(activeWordsData);
+  } else if (!isAudioSyncMode && textInput.value.trim()) {
+    buildWordStructures();
+  }
+  
   setTimeout(startAnimation, 100);
 })();
