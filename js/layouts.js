@@ -338,38 +338,37 @@ function buildWordStructuresFromAudio(wordsData) {
       w.animY += shiftY;
       w.targetY += shiftY;
     });
-  } else {
-    // For non-subtitle layouts, clamp all words to safe area
-    const safePadding = 20;
-    wordObjects.forEach(word => {
-      // Clamp X position
-      if (word.x < safePadding) {
-        word.x = safePadding;
-        word.baseX = safePadding;
-        word.animX = safePadding;
-        word.targetX = safePadding;
-      }
-      if (word.x + word.width > canvas.width - safePadding) {
-        word.x = canvas.width - safePadding - word.width;
-        word.baseX = canvas.width - safePadding - word.width;
-        word.animX = canvas.width - safePadding - word.width;
-        word.targetX = canvas.width - safePadding - word.width;
-      }
-      // Clamp Y position
-      if (word.y < safePadding + fontSize) {
-        word.y = safePadding + fontSize;
-        word.baseY = safePadding + fontSize;
-        word.animY = safePadding + fontSize;
-        word.targetY = safePadding + fontSize;
-      }
-      if (word.y > canvas.height - safePadding) {
-        word.y = canvas.height - safePadding;
-        word.baseY = canvas.height - safePadding;
-        word.animY = canvas.height - safePadding;
-        word.targetY = canvas.height - safePadding;
-      }
-    });
   }
+  // For all layouts, ensure words are clamped to safe area
+  const safePadding = 20;
+  wordObjects.forEach(word => {
+    // Clamp X position
+    if (word.x < safePadding) {
+      word.x = safePadding;
+      word.baseX = safePadding;
+      word.animX = safePadding;
+      word.targetX = safePadding;
+    }
+    if (word.x + word.width > canvas.width - safePadding) {
+      word.x = canvas.width - safePadding - word.width;
+      word.baseX = canvas.width - safePadding - word.width;
+      word.animX = canvas.width - safePadding - word.width;
+      word.targetX = canvas.width - safePadding - word.width;
+    }
+    // Clamp Y position
+    if (word.y < safePadding + fontSize) {
+      word.y = safePadding + fontSize;
+      word.baseY = safePadding + fontSize;
+      word.animY = safePadding + fontSize;
+      word.targetY = safePadding + fontSize;
+    }
+    if (word.y > canvas.height - safePadding) {
+      word.y = canvas.height - safePadding;
+      word.baseY = canvas.height - safePadding;
+      word.animY = canvas.height - safePadding;
+      word.targetY = canvas.height - safePadding;
+    }
+  });
 }
 
 function renderFocusedCenter(elapsed, fontSize, fontStyle, tracking, driftSpeed) {

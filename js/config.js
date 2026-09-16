@@ -81,6 +81,10 @@ const sidebarResizer = document.getElementById('sidebarResizer');
 const undoBtn = document.getElementById('undoBtn');
 const redoBtn = document.getElementById('redoBtn');
 
+// --- Skip Back/Forward Buttons ---
+const skipBackBtn = document.getElementById('skipBackBtn');
+const skipForwardBtn = document.getElementById('skipForwardBtn');
+
 // --- Rotation Slider ---
 const rotationSlider = document.getElementById('rotationSlider');
 const rotationVal = document.getElementById('rotationVal');
