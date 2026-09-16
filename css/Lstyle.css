@@ -10,6 +10,21 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  user-select: none;
+}
+
+/* Allow text selection only in input and textarea elements */
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="email"],
+input[type="search"],
+input[type="url"],
+textarea {
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
 }
 
 body {
