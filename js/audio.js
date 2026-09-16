@@ -244,6 +244,14 @@ async function transcribeWithWhisperX(file) {
     formData.append('file', file);
     formData.append('mode', 'whisperx');
 
+    // Read and attach the reference text prompt if present
+    const promptInput = document.getElementById('textInput');
+    const promptText = promptInput ? promptInput.value.trim() : '';
+
+    if (promptText) {
+      formData.append('prompt', promptText);
+    }
+
     let processInterval;
 
     xhr.upload.onprogress = (e) => {
@@ -252,7 +260,9 @@ async function transcribeWithWhisperX(file) {
         progressBar.style.width = `${uploadPercent}%`;
         progressText.textContent = `${uploadPercent}%`;
         if (uploadPercent >= 50) {
-          progressTitle.textContent = 'Processing Audio with WhisperX...';
+          progressTitle.textContent = promptText 
+            ? 'Aligning Audio with Reference Text...' 
+            : 'Processing Audio with WhisperX...';
         }
       }
     };
@@ -285,12 +295,15 @@ async function transcribeWithWhisperX(file) {
 
     xhr.onerror = () => {
       clearInterval(processInterval);
-      reject(new Error('Network error during upload to WhisperX server.'));
+      reject(new Error('Network error / CORS issue during request to WhisperX server.'));
     };
 
     xhr.upload.onloadend = () => {
       let simulatedPercent = 50;
-      progressTitle.textContent = 'Transcribing with WhisperX Model...';
+      progressTitle.textContent = promptText 
+        ? 'Aligning Audio with WhisperX Model...' 
+        : 'Transcribing with WhisperX Model...';
+        
       processInterval = setInterval(() => {
         if (simulatedPercent < 95) {
           simulatedPercent += Math.floor(Math.random() * 3) + 1;
@@ -300,7 +313,10 @@ async function transcribeWithWhisperX(file) {
       }, 200);
     };
 
-    xhr.open('POST', '/transcribe');
+    // Absolute URL targeting Flask backend running on port 5000
+    xhr.open('POST', 'http://127.0.0.1:5000/transcribe');
+    
+    // Explicitly send request without custom headers to avoid preflight CORS complications
     xhr.send(formData);
   });
 }
