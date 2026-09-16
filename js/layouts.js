@@ -108,7 +108,7 @@ function buildWordStructures() {
   const fontSize = getComputedFontSize();
   const fontStyle = fontStyleInput.value;
   const tracking = parseInt(trackingInput.value, 10);
-  const lineHeight = fontSize * 2.2;
+  const lineHeight = fontSize * 2.0; // Improved: tighter, more professional line spacing
   const staggerDelay = parseFloat(staggerInput.value);
   const defaultDuration = parseFloat(wordLifeInput.value);
 
@@ -116,23 +116,49 @@ function buildWordStructures() {
   const spaceWidth = ctx.measureText(' ').width + tracking;
   let globalWordIndex = 0;
 
-  const padding = 20;
+  const padding = 40; // Improved: increased padding for better breathing room
   const maxLineWidth = canvas.width - (padding * 2);
   
-  // Start at the center of the canvas for all layout modes
-  let currentY = (canvas.height / 2) - (fontSize / 2);
+  // Calculate total content height first for proper vertical centering
+  let totalContentHeight = 0;
+  const lineData = [];
   
+  rawLines.forEach((lineText, lineIndex) => {
+    const words = lineText.trim().split(/\s+/).filter(w => w.length > 0);
+    if (words.length === 0) return;
+    
+    const subLines = balanceLineForReadability(words, maxLineWidth, tracking, spaceWidth);
+    subLines.forEach(subLineWords => {
+      if (subLineWords.length > 0) {
+        lineData.push({ words: subLineWords, isParagraphBreak: false });
+        totalContentHeight += lineHeight;
+      }
+    });
+    // Add extra spacing after paragraph breaks
+    if (lineIndex < rawLines.length - 1 && rawLines[lineIndex].trim().length > 0) {
+      totalContentHeight += lineHeight * 0.5;
+    }
+  });
+  
+  // Determine starting Y position based on layout mode
+  let currentY;
   if (layoutModeInput.value === 'subtitle') {
-    // Start near the bottom and let the standard wrap logic take over
-    currentY = canvas.height - padding - (fontSize * 2);
+    // Subtitle mode: position in lower third of canvas
+    currentY = canvas.height - padding - totalContentHeight;
+  } else {
+    // Standard and focused-center: vertically center the entire block
+    currentY = (canvas.height / 2) - (totalContentHeight / 2) + (lineHeight / 2);
   }
 
   // Add word gap for all layout modes
   const wordGap = parseFloat(centerXOffsetInput.value) || 0;
   const effectiveSpaceWidth = spaceWidth + wordGap;
 
+  let lineIdx = 0;
   rawLines.forEach((lineText, lineIndex) => {
     const words = lineText.trim().split(/\s+/).filter(w => w.length > 0);
+    
+    if (words.length === 0) return;
     
     // IMPROVED LINE BALANCING: Instead of using hard newlines only,
     // we break long lines into multiple balanced sub-lines for better readability
@@ -190,7 +216,7 @@ function buildWordStructures() {
           duration: defaultDuration,
           particles: particles,
           dataIndex: -1,
-          lineIdx: lineIndex,
+          lineIdx: lineIdx,
           wordIdx: wordIdx,
           animX: currentX,
           animY: currentY,
@@ -209,14 +235,15 @@ function buildWordStructures() {
         wordIdx++;
       });
       
-      // Move to next sub-line (with slightly reduced spacing for visual grouping)
-      if (subIndex < subLines.length - 1) {
-        currentY += lineHeight * 0.9;
-      }
+      // Move to next sub-line
+      currentY += lineHeight;
+      lineIdx++;
     });
     
-    // After all sub-lines, add normal line spacing
-    currentY += lineHeight;
+    // Add extra spacing after paragraph breaks (original newline)
+    if (lineIndex < rawLines.length - 1 && lineText.trim().length > 0) {
+      currentY += lineHeight * 0.5;
+    }
   });
 
   // Clamp all words to safe area after positioning
@@ -264,38 +291,58 @@ function buildWordStructuresFromAudio(wordsData) {
   ctx.font = `${fontSize}px ${fontStyle}`;
   const spaceWidth = ctx.measureText(' ').width + tracking;
 
-  const lineHeight = fontSize * 2.2;
-  const padding = 20;
+  const lineHeight = fontSize * 2.0; // Improved: tighter, more professional line spacing
+  const padding = 40; // Improved: increased padding for better breathing room
   const maxLineWidth = canvas.width - (padding * 2);
   
-  // Start at the center of the canvas for all layout modes
-  let currentY = (canvas.height / 2) - (fontSize / 2);
-
-  if (layoutModeInput && layoutModeInput.value === 'subtitle') {
-    // Start near the bottom and let the standard wrap logic take over
-    currentY = canvas.height - padding - (fontSize * 2);
-  }
-
-  let globalIdx = 0;
+  // Add word gap for all layout modes (not just focused-center)
+  const wordGap = parseFloat(centerXOffsetInput.value) || 0;
+  const effectiveSpaceWidth = spaceWidth + wordGap;
   
-  // Calculate total width of all words to center them
-  let totalLineWidth = 0;
-  wordsData.forEach(wordItem => {
+  // Calculate total content height first for proper vertical centering
+  let totalContentHeight = 0;
+  let currentLineWidth = 0;
+  let wordsInCurrentLine = 0;
+  
+  // First pass: calculate how many lines we'll need and total height
+  wordsData.forEach((wordItem, idx) => {
     let wWidth = 0;
     wordItem.word.trim().split('').forEach(char => {
       wWidth += ctx.measureText(char).width + tracking;
     });
-    totalLineWidth += wWidth;
+    
+    // Check if word fits on current line
+    if (currentLineWidth + wWidth + (wordsInCurrentLine > 0 ? effectiveSpaceWidth : 0) > maxLineWidth && wordsInCurrentLine > 0) {
+      totalContentHeight += lineHeight;
+      currentLineWidth = wWidth;
+      wordsInCurrentLine = 1;
+    } else {
+      currentLineWidth += wWidth + (wordsInCurrentLine > 0 ? effectiveSpaceWidth : 0);
+      wordsInCurrentLine++;
+    }
   });
-  // Add gaps between words
-  const wordGap = parseFloat(centerXOffsetInput.value) || 0;
-  if (wordsData.length > 1) {
-    totalLineWidth += (wordsData.length - 1) * (spaceWidth + wordGap);
+  // Add last line
+  if (wordsInCurrentLine > 0) {
+    totalContentHeight += lineHeight;
   }
   
-  // Start X position centered on canvas
-  let currentX = (canvas.width / 2) - (totalLineWidth / 2);
+  // Determine starting Y position based on layout mode
+  let currentY;
+  if (layoutModeInput && layoutModeInput.value === 'subtitle') {
+    // Subtitle mode: position in lower third of canvas
+    currentY = canvas.height - padding - totalContentHeight;
+  } else {
+    // Standard and focused-center: vertically center the entire block
+    currentY = (canvas.height / 2) - (totalContentHeight / 2) + (lineHeight / 2);
+  }
 
+  let globalIdx = 0;
+  
+  // Reset line tracking for second pass
+  currentLineWidth = 0;
+  wordsInCurrentLine = 0;
+  let lineStartIndex = 0;
+  
   wordsData.forEach((wordItem, idx) => {
     const currentIndex = globalIdx++;
     let wWidth = 0;
@@ -303,14 +350,13 @@ function buildWordStructuresFromAudio(wordsData) {
       wWidth += ctx.measureText(char).width + tracking;
     });
 
-    // Add word gap for all layout modes (not just focused-center)
-    const effectiveSpaceWidth = spaceWidth + wordGap;
-
-    // WRAP LOGIC
-    if (currentX + wWidth > canvas.width - padding && currentX > padding) {
-      // Recalculate centered position for new line
-      currentX = (canvas.width / 2) - (totalLineWidth / 2);
+    // WRAP LOGIC: Check if word fits on current line
+    if (currentLineWidth + wWidth + (wordsInCurrentLine > 0 ? effectiveSpaceWidth : 0) > maxLineWidth && wordsInCurrentLine > 0) {
+      // Move to next line
       currentY += lineHeight;
+      currentLineWidth = 0;
+      wordsInCurrentLine = 0;
+      lineStartIndex = idx;
     }
 
     // Prevent bottom overflow by wrapping to top
@@ -329,7 +375,8 @@ function buildWordStructuresFromAudio(wordsData) {
       if (remainingWords.length > 1) {
         remainingLineWidth += (remainingWords.length - 1) * effectiveSpaceWidth;
       }
-      currentX = (canvas.width / 2) - (remainingLineWidth / 2);
+      currentLineWidth = 0;
+      wordsInCurrentLine = 0;
     }
 
     const particles = [];
@@ -338,21 +385,52 @@ function buildWordStructuresFromAudio(wordsData) {
     const offsetX = wordItem.offsetX || 0;
     const offsetY = wordItem.offsetY || 0;
 
-    // Use saved absolute positions if they exist AND gap hasn't changed, otherwise calculate
-    let baseWordX, baseWordY;
-    const currentGap = parseFloat(centerXOffsetInput.value) || 0;
-    const savedGap = wordItem.savedGap !== undefined ? wordItem.savedGap : 0;
-    
-    // Only use saved absolute positions if the gap setting hasn't changed since they were saved
-    if (wordItem.absX !== undefined && wordItem.absY !== undefined && Math.abs(currentGap - savedGap) < 0.01) {
-      baseWordX = wordItem.absX;
-      baseWordY = wordItem.absY;
-    } else {
-      baseWordX = currentX + offsetX;
-      baseWordY = currentY + offsetY;
-      // Save the current gap value with this word so we know if it changes later
-      wordItem.savedGap = currentGap;
+    // Calculate centered X position for current line
+    // First, calculate total width of words on this line
+    let lineWidthCalc = 0;
+    let lineWordCount = 0;
+    for (let i = lineStartIndex; i <= idx; i++) {
+      let ww = 0;
+      wordsData[i].word.trim().split('').forEach(char => {
+        ww += ctx.measureText(char).width + tracking;
+      });
+      lineWidthCalc += ww;
+      lineWordCount++;
     }
+    if (lineWordCount > 1) {
+      lineWidthCalc += (lineWordCount - 1) * effectiveSpaceWidth;
+    }
+    
+    // Build up currentX as we add words to the line
+    if (wordsInCurrentLine === 0) {
+      currentLineWidth = wWidth;
+    } else {
+      currentLineWidth += wWidth + effectiveSpaceWidth;
+    }
+    
+    // Calculate centered position for this word within the line
+    let lineTotalWidth = 0;
+    let lineWords = [];
+    for (let i = lineStartIndex; i <= idx; i++) {
+      let ww = 0;
+      wordsData[i].word.trim().split('').forEach(char => {
+        ww += ctx.measureText(char).width + tracking;
+      });
+      lineTotalWidth += ww;
+      lineWords.push({ index: i, width: ww });
+    }
+    if (lineWords.length > 1) {
+      lineTotalWidth += (lineWords.length - 1) * effectiveSpaceWidth;
+    }
+    
+    // Calculate this word's position within the centered line
+    let wordOffsetInLine = 0;
+    for (let i = 0; i < lineWords.length - 1; i++) {
+      wordOffsetInLine += lineWords[i].width + effectiveSpaceWidth;
+    }
+    
+    const baseWordX = (canvas.width / 2) - (lineTotalWidth / 2) + wordOffsetInLine;
+    const baseWordY = currentY + offsetY;
 
     let charX = baseWordX;
 
@@ -368,7 +446,7 @@ function buildWordStructuresFromAudio(wordsData) {
       text: getDisplayText(wordItem.word.trim()),
       x: baseWordX,
       y: baseWordY,
-      baseX: currentX,
+      baseX: baseWordX,
       baseY: currentY,
       width: wWidth,
       baseWidth: wWidth,
@@ -382,15 +460,10 @@ function buildWordStructuresFromAudio(wordsData) {
       targetX: baseWordX,
       targetY: baseWordY,
       rotation: wordItem.rotation || 0,
-      savedGap: currentGap
+      savedGap: wordGap
     });
 
-    // Apply word gap after each word (except the last one)
-    if (idx < wordsData.length - 1) {
-      currentX += wWidth + effectiveSpaceWidth;
-    } else {
-      currentX += wWidth; // Last word doesn't need trailing gap
-    }
+    wordsInCurrentLine++;
   });
 
   textInput.value = wordsData.map(w => getDisplayText(w.word.trim())).join(' ');
