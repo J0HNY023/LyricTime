@@ -78,8 +78,22 @@ function buildWordStructures() {
       }
 
       // Prevent bottom overflow by wrapping to top if needed
-      if (currentY > canvas.height - padding) {
+      if (currentY + fontSize > canvas.height - padding) {
         currentY = padding + fontSize;
+        // Recalculate centered position for new line after wrap
+        let remainingWords = words.slice(idx);
+        let remainingLineWidth = 0;
+        remainingWords.forEach(wordText => {
+          let wWidth = 0;
+          wordText.split('').forEach(char => {
+            wWidth += ctx.measureText(char).width + tracking;
+          });
+          remainingLineWidth += wWidth;
+        });
+        if (remainingWords.length > 1) {
+          remainingLineWidth += (remainingWords.length - 1) * effectiveSpaceWidth;
+        }
+        currentX = (canvas.width / 2) - (remainingLineWidth / 2);
       }
 
       const startTimeOffset = globalWordIndex * staggerDelay;
@@ -222,8 +236,24 @@ function buildWordStructuresFromAudio(wordsData) {
       currentY += lineHeight;
     }
 
-    // Prevent bottom overflow
-    if (currentY > canvas.height - padding) return;
+    // Prevent bottom overflow by wrapping to top
+    if (currentY + fontSize > canvas.height - padding) {
+      currentY = padding + fontSize;
+      // Recalculate centered position for remaining words
+      let remainingWords = wordsData.slice(idx);
+      let remainingLineWidth = 0;
+      remainingWords.forEach(w => {
+        let wWidth = 0;
+        w.word.trim().split('').forEach(char => {
+          wWidth += ctx.measureText(char).width + tracking;
+        });
+        remainingLineWidth += wWidth;
+      });
+      if (remainingWords.length > 1) {
+        remainingLineWidth += (remainingWords.length - 1) * effectiveSpaceWidth;
+      }
+      currentX = (canvas.width / 2) - (remainingLineWidth / 2);
+    }
 
     const particles = [];
     const chars = getDisplayText(wordItem.word.trim()).split('');
