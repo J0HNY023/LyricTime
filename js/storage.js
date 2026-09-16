@@ -89,8 +89,63 @@ function restoreSidebarScrollPosition() {
   }
 }
 
+// Apply default values from data-default attributes to all inputs
+function applyDefaultValues() {
+  const sliders = document.querySelectorAll('input[type="range"][data-default]');
+  sliders.forEach(slider => {
+    const defaultValue = slider.getAttribute('data-default');
+    if (defaultValue !== null) {
+      slider.value = defaultValue;
+    }
+  });
+  
+  // Reset select dropdowns to their defaults
+  const layoutModeSelect = document.getElementById('layoutMode');
+  if (layoutModeSelect) {
+    layoutModeSelect.value = 'standard';
+  }
+
+  const fontStyleSelect = document.getElementById('fontStyle');
+  if (fontStyleSelect) {
+    fontStyleSelect.selectedIndex = 0;
+  }
+
+  const textEffectSelect = document.getElementById('textEffect');
+  if (textEffectSelect) {
+    textEffectSelect.value = 'none';
+  }
+
+  // Reset checkboxes to unchecked state
+  const autoAlignCheckbox = document.getElementById('autoAlign');
+  if (autoAlignCheckbox) {
+    autoAlignCheckbox.checked = false;
+  }
+
+  const capitalizeTextCheckbox = document.getElementById('capitalizeText');
+  if (capitalizeTextCheckbox) {
+    capitalizeTextCheckbox.checked = false;
+  }
+
+  const debugModeCheckbox = document.getElementById('debugMode');
+  if (debugModeCheckbox) {
+    debugModeCheckbox.checked = false;
+  }
+  
+  const showAltTipsCheckbox = document.getElementById('showAltTips');
+  if (showAltTipsCheckbox) {
+    showAltTipsCheckbox.checked = true;
+    showAltTips = true;
+  }
+}
+
 async function loadState() {
   const saved = localStorage.getItem('dust_animation_state');
+  
+  // If no saved state exists, apply default values first
+  if (!saved) {
+    applyDefaultValues();
+  }
+  
   if (saved) {
     try {
       const state = JSON.parse(saved);
