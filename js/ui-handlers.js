@@ -628,15 +628,30 @@ canvas.addEventListener('pointerdown', (e) => {
           startRotation: wordObjects[idx].rotation || 0
         }));
       // Check for rotation mode (Ctrl + Alt), resize mode (Alt only), or drag mode
-      // Only allow resize/rotate when Alt is pressed
+      // Only allow resize/rotate when Alt is pressed AND hovering near an edge
       if (isCtrlDown && isAltDown) {
         isRotating = true;
         rotateStartX = coords.x;
         // Don't set isDragging or isResizing when rotating
       } else if (isAltDown) {
-        isResizing = true;
-        resizeStartX = coords.x;
-        // Don't set isDragging when resizing
+        // Check if we're near any edge of the group bounding box before allowing resize
+        const edgeThreshold = 8;
+        const nearLeft = Math.abs(coords.x - groupBox.minX) < edgeThreshold;
+        const nearRight = Math.abs(coords.x - groupBox.maxX) < edgeThreshold;
+        const nearTop = Math.abs(coords.y - groupBox.minY) < edgeThreshold;
+        const nearBottom = Math.abs(coords.y - groupBox.maxY) < edgeThreshold;
+        
+        if (nearLeft || nearRight || nearTop || nearBottom) {
+          isResizing = true;
+          resizeStartX = coords.x;
+          resizeStartY = coords.y;
+          // Store which edges we're near for directional resize
+          resizeHorizontal = nearLeft || nearRight;
+          resizeVertical = nearTop || nearBottom;
+          // Don't set isDragging when resizing
+        } else {
+          isDragging = true;
+        }
       } else {
         isDragging = true;
       }
@@ -718,31 +733,6 @@ canvas.addEventListener('pointermove', (e) => {
         let newAbsX = state.startX + dx;
         let newAbsY = state.startY + dy;
 
-        // Apply screen clamping if enabled
-        const obj = wordObjects[state.idx];
-        if (isClampToScreenEnabled()) {
-          const wordScale = obj.scale || 1.0;
-          const scaledWidth = (obj.baseWidth || obj.width) * wordScale;
-          const scaledHeight = getComputedFontSize() * wordScale;
-          const rotation = obj.rotation || 0;
-          
-          // Calculate bounding box considering rotation
-          const rad = rotation * Math.PI / 180;
-          const cos = Math.abs(Math.cos(rad));
-          const sin = Math.abs(Math.sin(rad));
-          const rotWidth = scaledWidth * cos + scaledHeight * sin;
-          const rotHeight = scaledWidth * sin + scaledHeight * cos;
-          
-          const padding = 20;
-          const minX = padding;
-          const maxX = canvas.width - rotWidth - padding;
-          const minY = padding;
-          const maxY = canvas.height - rotHeight - padding;
-          
-          newAbsX = Math.max(minX, Math.min(newAbsX, maxX));
-          newAbsY = Math.max(minY, Math.min(newAbsY, maxY));
-        }
-
         wordObjects[state.idx].x = newAbsX;
         wordObjects[state.idx].y = newAbsY;
 
@@ -767,46 +757,6 @@ canvas.addEventListener('pointermove', (e) => {
     const dx = coords.x - rotateStartX;
     dragStartStates.forEach(state => {
       let newRotation = (state.startRotation || 0) + (dx * 0.5); // 0.5 degrees per pixel
-      
-      // Apply screen clamping for rotation if enabled
-      if (isClampToScreenEnabled()) {
-        const obj = wordObjects[state.idx];
-        const wordScale = obj.scale || 1.0;
-        const scaledWidth = (obj.baseWidth || obj.width) * wordScale;
-        const scaledHeight = getComputedFontSize() * wordScale;
-        
-        // Calculate bounding box with new rotation
-        const rad = newRotation * Math.PI / 180;
-        const cos = Math.abs(Math.cos(rad));
-        const sin = Math.abs(Math.sin(rad));
-        const rotWidth = scaledWidth * cos + scaledHeight * sin;
-        const rotHeight = scaledWidth * sin + scaledHeight * cos;
-        
-        const padding = 20;
-        const minX = padding + rotWidth / 2;
-        const maxX = canvas.width - padding - rotWidth / 2;
-        const minY = padding;
-        const maxY = canvas.height - rotHeight - padding;
-        
-        // Clamp position to keep rotated word in bounds
-        let newX = obj.x;
-        let newY = obj.y;
-        if (newX < minX) newX = minX;
-        if (newX > maxX) newX = maxX;
-        if (newY < minY) newY = minY;
-        if (newY > maxY) newY = maxY;
-        
-        obj.x = newX;
-        obj.y = newY;
-        
-        if (obj.dataIndex !== -1) {
-          activeWordsData[obj.dataIndex].absX = newX;
-          activeWordsData[obj.dataIndex].absY = newY;
-          // Also save the current gap value so we know when it changes
-          const currentGap = parseFloat(centerXOffsetInput?.value) || 0;
-          activeWordsData[obj.dataIndex].savedGap = currentGap;
-        }
-      }
       
       wordObjects[state.idx].rotation = newRotation;
       if (wordObjects[state.idx].dataIndex !== -1) {
