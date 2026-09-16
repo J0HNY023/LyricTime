@@ -121,12 +121,14 @@ function restoreStateFromSnapshot(snapshot) {
   centerXOffsetVal.textContent = `${centerXOffsetInput.value}px`;
   
   // Rebuild and redraw
-  if (isAudioSyncMode) {
-    buildWordStructuresFromAudio(activeWordsData);
-  } else {
-    buildWordStructures();
+  if (typeof buildWordStructuresFromAudio === 'function' && typeof buildWordStructures === 'function' && typeof drawFrameAtCurrentTime === 'function') {
+    if (isAudioSyncMode) {
+      buildWordStructuresFromAudio(activeWordsData);
+    } else {
+      buildWordStructures();
+    }
+    drawFrameAtCurrentTime();
   }
-  drawFrameAtCurrentTime();
   
   // Update char counter
   updateCharCounter();

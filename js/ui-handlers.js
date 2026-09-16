@@ -81,6 +81,7 @@ centerXOffsetInput.addEventListener('input', () => {
   centerXOffsetVal.textContent = `${centerXOffsetInput.value}px`;
   saveState();
   
+  // Rebuild layout with new gap value - this applies to ALL words
   if (isAudioSyncMode) {
     buildWordStructuresFromAudio(activeWordsData);
   } else {
@@ -210,7 +211,7 @@ triggerBtn.addEventListener('click', () => {
 
 window.addEventListener('resize', () => {
   resizeCanvas();
-  if (!isAudioSyncMode) buildWordStructures();
+  if (typeof buildWordStructures === 'function' && !isAudioSyncMode) buildWordStructures();
 });
 
 // --- Enhanced Keyboard Controls ---
@@ -296,6 +297,9 @@ document.addEventListener('keydown', (e) => {
           if (wordObjects[idx].dataIndex !== -1 && activeWordsData[wordObjects[idx].dataIndex]) {
             activeWordsData[wordObjects[idx].dataIndex].absX = wordObjects[idx].x;
             activeWordsData[wordObjects[idx].dataIndex].absY = wordObjects[idx].y;
+            // Also save the current gap value so we know when it changes
+            const currentGap = parseFloat(centerXOffsetInput?.value) || 0;
+            activeWordsData[wordObjects[idx].dataIndex].savedGap = currentGap;
           }
         }
       });
@@ -469,6 +473,9 @@ function getGroupBoundingBox(indices) {
 
   indices.forEach(idx => {
     const obj = wordObjects[idx];
+    // Skip undefined or invalid objects
+    if (!obj || typeof obj.scale === 'undefined') return;
+
     const wordScale = obj.scale || 1.0;
     const scaledFontSize = baseFontSize * wordScale;
     const scaledWidth = (obj.baseWidth || obj.width) * wordScale;
@@ -484,14 +491,18 @@ function getGroupBoundingBox(indices) {
     maxX = Math.max(maxX, boxX + scaledWidth + padding * 2);
     maxY = Math.max(maxY, boxY + scaledFontSize + padding * 2);
   });
+
+  // If no valid words were processed, return null
+  if (minX === Infinity) return null;
+
   return { minX, minY, maxX, maxY };
 }
 
 canvas.addEventListener('pointerdown', (e) => {
   const coords = getCanvasCoordinates(e);
 
-  // 1. Marquee Selection (Ctrl + Drag)
-  if (e.ctrlKey) {
+  // 1. Marquee Selection (Ctrl + Drag, but NOT when Alt is also pressed for rotation)
+  if (e.ctrlKey && !e.altKey) {
     e.preventDefault();
     isMarqueeSelecting = true;
     marqueeStartX = coords.x;
@@ -516,7 +527,8 @@ canvas.addEventListener('pointerdown', (e) => {
         idx: idx,
         startX: wordObjects[idx].x,
         startY: wordObjects[idx].y,
-        startScale: wordObjects[idx].scale || 1.0
+        startScale: wordObjects[idx].scale || 1.0,
+        startRotation: wordObjects[idx].rotation || 0
       }));
     } else {
       selectedWordIndices = [hitIndex];
@@ -525,7 +537,8 @@ canvas.addEventListener('pointerdown', (e) => {
         idx: hitIndex,
         startX: wordObjects[hitIndex].x,
         startY: wordObjects[hitIndex].y,
-        startScale: wordObjects[hitIndex].scale || 1.0
+        startScale: wordObjects[hitIndex].scale || 1.0,
+        startRotation: wordObjects[hitIndex].rotation || 0
       }];
       
       // Sync rotation slider with new selection
@@ -533,12 +546,15 @@ canvas.addEventListener('pointerdown', (e) => {
     }
 
     // Check for rotation mode (Ctrl + Alt), resize mode (Alt only), or drag mode
+    // Only allow resize/rotate when Alt is pressed
     if (isCtrlDown && isAltDown) {
       isRotating = true;
       rotateStartX = coords.x;
+      // Don't set isDragging or isResizing when rotating
     } else if (isAltDown) {
       isResizing = true;
       resizeStartX = coords.x;
+      // Don't set isDragging when resizing
     } else {
       isDragging = true;
     }
@@ -552,15 +568,22 @@ canvas.addEventListener('pointerdown', (e) => {
       dragStartX = coords.x;
       dragStartY = coords.y;
       dragStartStates = selectedWordIndices.map(idx => ({
-        idx: idx, startX: wordObjects[idx].x, startY: wordObjects[idx].y, startScale: wordObjects[idx].scale || 1.0
+        idx: idx, 
+        startX: wordObjects[idx].x, 
+        startY: wordObjects[idx].y, 
+        startScale: wordObjects[idx].scale || 1.0,
+        startRotation: wordObjects[idx].rotation || 0
       }));
       // Check for rotation mode (Ctrl + Alt), resize mode (Alt only), or drag mode
+      // Only allow resize/rotate when Alt is pressed
       if (isCtrlDown && isAltDown) {
         isRotating = true;
         rotateStartX = coords.x;
+        // Don't set isDragging or isResizing when rotating
       } else if (isAltDown) {
         isResizing = true;
         resizeStartX = coords.x;
+        // Don't set isDragging when resizing
       } else {
         isDragging = true;
       }
@@ -611,37 +634,60 @@ canvas.addEventListener('pointermove', (e) => {
     canvasTooltip.style.display = 'none';
   }
 
-  // 1. Active drag/resize
-  if (draggedWordIndex !== -1 && dragStartStates.length > 0) {
+  // 1. Active drag/resize (only if NOT rotating)
+  if (draggedWordIndex !== -1 && dragStartStates.length > 0 && !isRotating) {
     const dx = coords.x - dragStartX;
     const dy = coords.y - dragStartY;
 
     if (isResizing) {
-      dragStartStates.forEach(state => {
-        let newScale = state.startScale + (dx / 100);
-        newScale = Math.max(0.5, Math.min(3.0, newScale));
+      // Only allow resize when Alt is pressed
+      if (!isAltDown) {
+        // If Alt is not pressed, treat as drag instead
+        isResizing = false;
+        isDragging = true;
+      } else {
+        dragStartStates.forEach(state => {
+          let newScale = state.startScale + (dx / 100);
+          newScale = Math.max(0.5, Math.min(3.0, newScale));
 
-        wordObjects[state.idx].scale = newScale;
-        if (wordObjects[state.idx].dataIndex !== -1) {
-          activeWordsData[wordObjects[state.idx].dataIndex].scale = newScale;
-        }
-      });
-      drawFrameAtCurrentTime();
-      canvas.style.cursor = 'nwse-resize';
-      if (isAltDown) canvasTooltip.textContent = 'alt+ hover on edges to resize';
-    } else if (isDragging) {
+          wordObjects[state.idx].scale = newScale;
+          if (wordObjects[state.idx].dataIndex !== -1) {
+            activeWordsData[wordObjects[state.idx].dataIndex].scale = newScale;
+          }
+        });
+        drawFrameAtCurrentTime();
+        canvas.style.cursor = 'nwse-resize';
+        canvasTooltip.textContent = 'alt+ hover on edges to resize';
+      }
+    } 
+    if (isDragging) {
       dragStartStates.forEach(state => {
         let newAbsX = state.startX + dx;
         let newAbsY = state.startY + dy;
 
-        if (autoAlignInput && autoAlignInput.checked) {
-          const padding = 10;
-          const obj = wordObjects[state.idx];
-          const scaledWidth = (obj.baseWidth || obj.width) * (obj.scale || 1);
-          const maxX = canvas.width - scaledWidth - padding;
-          const maxY = canvas.height - 20;
-          newAbsX = Math.max(padding, Math.min(newAbsX, maxX));
-          newAbsY = Math.max(40, Math.min(newAbsY, maxY));
+        // Apply screen clamping if enabled
+        const obj = wordObjects[state.idx];
+        if (isClampToScreenEnabled()) {
+          const wordScale = obj.scale || 1.0;
+          const scaledWidth = (obj.baseWidth || obj.width) * wordScale;
+          const scaledHeight = getComputedFontSize() * wordScale;
+          const rotation = obj.rotation || 0;
+          
+          // Calculate bounding box considering rotation
+          const rad = rotation * Math.PI / 180;
+          const cos = Math.abs(Math.cos(rad));
+          const sin = Math.abs(Math.sin(rad));
+          const rotWidth = scaledWidth * cos + scaledHeight * sin;
+          const rotHeight = scaledWidth * sin + scaledHeight * cos;
+          
+          const padding = 20;
+          const minX = padding;
+          const maxX = canvas.width - rotWidth - padding;
+          const minY = padding + rotHeight;
+          const maxY = canvas.height - padding;
+          
+          newAbsX = Math.max(minX, Math.min(newAbsX, maxX));
+          newAbsY = Math.max(minY, Math.min(newAbsY, maxY));
         }
 
         wordObjects[state.idx].x = newAbsX;
@@ -650,6 +696,9 @@ canvas.addEventListener('pointermove', (e) => {
         if (wordObjects[state.idx].dataIndex !== -1) {
           activeWordsData[wordObjects[state.idx].dataIndex].absX = newAbsX;
           activeWordsData[wordObjects[state.idx].dataIndex].absY = newAbsY;
+          // Also save the current gap value so we know when it changes
+          const currentGap = parseFloat(centerXOffsetInput?.value) || 0;
+          activeWordsData[wordObjects[state.idx].dataIndex].savedGap = currentGap;
         }
       });
       drawFrameAtCurrentTime();
@@ -660,10 +709,52 @@ canvas.addEventListener('pointermove', (e) => {
   }
   
   // 1b. Active rotation (Ctrl + Alt + Drag horizontally)
-  if (draggedWordIndex !== -1 && isAltDown && e.ctrlKey) {
-    const dx = coords.x - dragStartX;
+  // Only allow rotation when both Ctrl and Alt are pressed AND hovering on rotate icon or selected word
+  if (draggedWordIndex !== -1 && isRotating) {
+    const dx = coords.x - rotateStartX;
     dragStartStates.forEach(state => {
-      let newRotation = (dx * 0.5) % 360; // 0.5 degrees per pixel
+      let newRotation = (state.startRotation || 0) + (dx * 0.5); // 0.5 degrees per pixel
+      
+      // Apply screen clamping for rotation if enabled
+      if (isClampToScreenEnabled()) {
+        const obj = wordObjects[state.idx];
+        const wordScale = obj.scale || 1.0;
+        const scaledWidth = (obj.baseWidth || obj.width) * wordScale;
+        const scaledHeight = getComputedFontSize() * wordScale;
+        
+        // Calculate bounding box with new rotation
+        const rad = newRotation * Math.PI / 180;
+        const cos = Math.abs(Math.cos(rad));
+        const sin = Math.abs(Math.sin(rad));
+        const rotWidth = scaledWidth * cos + scaledHeight * sin;
+        const rotHeight = scaledWidth * sin + scaledHeight * cos;
+        
+        const padding = 20;
+        const minX = padding + rotWidth / 2;
+        const maxX = canvas.width - padding - rotWidth / 2;
+        const minY = padding + rotHeight;
+        const maxY = canvas.height - padding;
+        
+        // Clamp position to keep rotated word in bounds
+        let newX = obj.x;
+        let newY = obj.y;
+        if (newX < minX) newX = minX;
+        if (newX > maxX) newX = maxX;
+        if (newY < minY) newY = minY;
+        if (newY > maxY) newY = maxY;
+        
+        obj.x = newX;
+        obj.y = newY;
+        
+        if (obj.dataIndex !== -1) {
+          activeWordsData[obj.dataIndex].absX = newX;
+          activeWordsData[obj.dataIndex].absY = newY;
+          // Also save the current gap value so we know when it changes
+          const currentGap = parseFloat(centerXOffsetInput?.value) || 0;
+          activeWordsData[obj.dataIndex].savedGap = currentGap;
+        }
+      }
+      
       wordObjects[state.idx].rotation = newRotation;
       if (wordObjects[state.idx].dataIndex !== -1) {
         activeWordsData[wordObjects[state.idx].dataIndex].rotation = newRotation;
@@ -686,6 +777,7 @@ canvas.addEventListener('pointermove', (e) => {
 
     selectedWordIndices.forEach(idx => {
       const obj = wordObjects[idx];
+      if (!obj) return; // Skip if object doesn't exist
       const wordScale = obj.scale || 1.0;
       const scaledFontSize = baseFontSize * wordScale;
       const scaledWidth = (obj.baseWidth || obj.width) * wordScale;

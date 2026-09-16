@@ -37,6 +37,7 @@ const micStatus = document.getElementById('micStatus');
 // --- Audio Upload ---
 const audioUpload = document.getElementById('audioUpload');
 const processAudioBtn = document.getElementById('processAudioBtn');
+const transcriptionModeSelect = document.getElementById('transcriptionMode');
 
 // --- Value Label Spans ---
 const fontScaleVal = document.getElementById('fontScaleVal');

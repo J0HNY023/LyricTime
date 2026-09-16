@@ -33,13 +33,14 @@ if (fullscreenBtn && canvasViewport) {
     setTimeout(() => {
       resizeCanvas();
 
-      if (isAudioSyncMode) {
-        buildWordStructuresFromAudio(activeWordsData);
-      } else {
-        buildWordStructures();
+      if (typeof buildWordStructuresFromAudio === 'function' && typeof buildWordStructures === 'function' && typeof drawFrameAtCurrentTime === 'function') {
+        if (isAudioSyncMode) {
+          buildWordStructuresFromAudio(activeWordsData);
+        } else {
+          buildWordStructures();
+        }
+        drawFrameAtCurrentTime();
       }
-
-      drawFrameAtCurrentTime();
     }, 100);
   });
 }
@@ -56,30 +57,84 @@ function getComputedFontSize() {
   return baseSize * scale;
 }
 
-function clampWordToBounds(wordObj) {
-  if (!autoAlignInput || !autoAlignInput.checked) return;
+// Check if screen clamping is enabled
+function isClampToScreenEnabled() {
+  const toggle = document.getElementById('clampToScreenToggle');
+  return toggle && toggle.checked;
+}
 
+// Clamp a single word to canvas bounds considering scale and rotation
+function clampWordToBounds(wordObj) {
+  if (!isClampToScreenEnabled()) return;
+  
   const wordScale = wordObj.scale || 1.0;
   const scaledWidth = (wordObj.baseWidth || wordObj.width) * wordScale;
-  const scaledHeight = getComputedFontSize() * wordScale; // actual text height
-
+  const scaledHeight = getComputedFontSize() * wordScale;
+  const rotation = wordObj.rotation || 0;
+  
+  // Calculate bounding box considering rotation
+  const rad = rotation * Math.PI / 180;
+  const cos = Math.abs(Math.cos(rad));
+  const sin = Math.abs(Math.sin(rad));
+  
+  // Rotated bounding box dimensions
+  const rotWidth = scaledWidth * cos + scaledHeight * sin;
+  const rotHeight = scaledWidth * sin + scaledHeight * cos;
+  
   const padding = 20;
-  const maxX = canvas.width - scaledWidth - padding;
-  const maxY = canvas.height - 20;
-
+  const minX = padding;
+  const maxX = canvas.width - rotWidth - padding;
+  const minY = padding + rotHeight;
+  const maxY = canvas.height - padding;
+  
   // Clamp X position
-  if (wordObj.x < padding) wordObj.x = padding;
+  if (wordObj.x < minX) wordObj.x = minX;
   if (wordObj.x > maxX) wordObj.x = maxX;
-
-  // Clamp Y position based on text height so the top doesn't go off screen
-  const minY = padding + scaledHeight;
+  
+  // Clamp Y position
   if (wordObj.y < minY) wordObj.y = minY;
   if (wordObj.y > maxY) wordObj.y = maxY;
-
+  
   // Sync back to data model if in audio sync mode
   if (wordObj.dataIndex !== -1 && activeWordsData[wordObj.dataIndex]) {
     activeWordsData[wordObj.dataIndex].absX = wordObj.x;
     activeWordsData[wordObj.dataIndex].absY = wordObj.y;
+    // Also save the current gap value so we know when it changes
+    const currentGap = parseFloat(centerXOffsetInput?.value) || 0;
+    activeWordsData[wordObj.dataIndex].savedGap = currentGap;
+  }
+}
+
+// Clamp all words to screen bounds
+function clampAllWordsToScreen() {
+  if (!isClampToScreenEnabled()) return;
+  if (typeof drawFrameAtCurrentTime !== 'function') return;
+  
+  wordObjects.forEach(wordObj => clampWordToBounds(wordObj));
+  drawFrameAtCurrentTime();
+}
+
+// Clamp toggle handler - limits selected words to screen bounds
+const clampToScreenToggle = document.getElementById('clampToScreenToggle');
+if (clampToScreenToggle) {
+  // Load saved state
+  const savedClampState = localStorage.getItem('clampToScreenEnabled') === 'true';
+  clampToScreenToggle.checked = savedClampState;
+  
+  clampToScreenToggle.addEventListener('change', () => {
+    localStorage.setItem('clampToScreenEnabled', clampToScreenToggle.checked);
+    if (clampToScreenToggle.checked && typeof drawFrameAtCurrentTime === 'function') {
+      clampAllWordsToScreen();
+    }
+  });
+  
+  // Apply initial state if enabled (defer until main.js has loaded)
+  if (savedClampState) {
+    setTimeout(() => {
+      if (typeof drawFrameAtCurrentTime === 'function') {
+        clampAllWordsToScreen();
+      }
+    }, 100);
   }
 }
 

@@ -120,7 +120,7 @@ timelineSlider.addEventListener('input', () => {
 
     audioElement.currentTime = seekTime;
     updateActiveWordHighlight(seekTime);
-    drawFrameAtCurrentTime();
+    if (typeof drawFrameAtCurrentTime === 'function') drawFrameAtCurrentTime();
   }
 });
 
@@ -132,7 +132,7 @@ timelineSlider.addEventListener('change', () => {
   if (!audioElement.paused) {
     animationFrame = requestAnimationFrame(animate);
   } else {
-    drawFrameAtCurrentTime();
+    if (typeof drawFrameAtCurrentTime === 'function') drawFrameAtCurrentTime();
   }
 });
 
@@ -235,14 +235,108 @@ function transcribeAudioWithProgress(file, apiKey) {
   });
 }
 
+// --- WhisperX Server-side Transcription ---
+async function transcribeWithWhisperX(file) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const formData = new FormData();
+
+    formData.append('file', file);
+    formData.append('mode', 'whisperx');
+
+    // Read and attach the reference text prompt if present
+    const promptInput = document.getElementById('textInput');
+    const promptText = promptInput ? promptInput.value.trim() : '';
+
+    if (promptText) {
+      formData.append('prompt', promptText);
+    }
+
+    let processInterval;
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const uploadPercent = Math.round((e.loaded / e.total) * 50);
+        progressBar.style.width = `${uploadPercent}%`;
+        progressText.textContent = `${uploadPercent}%`;
+        if (uploadPercent >= 50) {
+          progressTitle.textContent = promptText 
+            ? 'Aligning Audio with Reference Text...' 
+            : 'Processing Audio with WhisperX...';
+        }
+      }
+    };
+
+    xhr.onload = () => {
+      clearInterval(processInterval);
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          progressBar.style.width = '100%';
+          progressText.textContent = '100%';
+          
+          if (data.success && data.words) {
+            resolve(data.words);
+          } else {
+            reject(new Error(data.error || 'WhisperX transcription failed'));
+          }
+        } catch (e) {
+          reject(new Error('Invalid JSON response from WhisperX server.'));
+        }
+      } else {
+        try {
+          const err = JSON.parse(xhr.responseText);
+          reject(new Error(err.error || 'Transcription failed.'));
+        } catch (e) {
+          reject(new Error(`Server returned status ${xhr.status}`));
+        }
+      }
+    };
+
+    xhr.onerror = () => {
+      clearInterval(processInterval);
+      reject(new Error('Network error / CORS issue during request to WhisperX server.'));
+    };
+
+    xhr.upload.onloadend = () => {
+      let simulatedPercent = 50;
+      progressTitle.textContent = promptText 
+        ? 'Aligning Audio with WhisperX Model...' 
+        : 'Transcribing with WhisperX Model...';
+        
+      processInterval = setInterval(() => {
+        if (simulatedPercent < 95) {
+          simulatedPercent += Math.floor(Math.random() * 3) + 1;
+          progressBar.style.width = `${simulatedPercent}%`;
+          progressText.textContent = `${simulatedPercent}%`;
+        }
+      }, 200);
+    };
+
+    // Absolute URL targeting Flask backend running on port 5000
+    xhr.open('POST', 'http://127.0.0.1:5000/transcribe');
+    
+    // Explicitly send request without custom headers to avoid preflight CORS complications
+    xhr.send(formData);
+  });
+}
+
 // --- Audio File Input Handler ---
 audioUpload.addEventListener('change', async () => {
   const file = audioUpload.files[0];
+  const fileNameSpan = document.getElementById('audioFileName');
   if (file) {
     await saveAudioFileToDB(file);
     const rawAudioUrl = URL.createObjectURL(file);
     audioElement.src = rawAudioUrl;
     audioControls.classList.add('active');
+    if (fileNameSpan) {
+      fileNameSpan.textContent = file.name.length > 30 ? file.name.substring(0, 27) + '...' : file.name;
+    }
+  } else {
+    if (fileNameSpan) {
+      fileNameSpan.textContent = 'No file chosen';
+    }
   }
 });
 
@@ -262,16 +356,12 @@ processAudioBtn.addEventListener('click', async () => {
   if (!file) return alert('Please upload an audio file.');
   if (isListening) stopListening();
 
-  processAudioBtn.textContent = 'Loading API key...';
+  // Get selected transcription mode
+  const transcriptionMode = transcriptionModeSelect ? transcriptionModeSelect.value : 'groq';
+
   processAudioBtn.disabled = true;
 
   try {
-    const apiKey = await getApiKey();
-
-    if (!apiKey) {
-      throw new Error('The "api" file was empty. Please add your key into it.');
-    }
-
     progressOverlay.classList.add('active');
     progressTitle.textContent = 'Uploading Audio...';
     progressBar.style.width = '0%';
@@ -279,12 +369,27 @@ processAudioBtn.addEventListener('click', async () => {
 
     processAudioBtn.textContent = 'Transcribing...';
 
-    const wordTimestamps = await transcribeAudioWithProgress(file, apiKey);
+    let wordTimestamps;
+
+    if (transcriptionMode === 'whisperx') {
+      // Use local WhisperX server
+      wordTimestamps = await transcribeWithWhisperX(file);
+    } else {
+      // Use Groq Cloud API
+      processAudioBtn.textContent = 'Loading API key...';
+      const apiKey = await getApiKey();
+
+      if (!apiKey) {
+        throw new Error('The "api" file was empty. Please add your key into it.');
+      }
+
+      wordTimestamps = await transcribeAudioWithProgress(file, apiKey);
+    }
 
     isAudioSyncMode = true;
     saveState();
     resizeCanvas();
-    buildWordStructuresFromAudio(wordTimestamps);
+    if (typeof buildWordStructuresFromAudio === 'function') buildWordStructuresFromAudio(wordTimestamps);
 
     setTimeout(async () => {
       progressOverlay.classList.remove('active');
