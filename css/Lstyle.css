@@ -242,6 +242,41 @@ canvas {
     0 0 12px rgba(0, 229, 255, 0.897);
 }
 
+/* Theme-styled checkbox for timestamp editor */
+.theme-checkbox {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #09090c;
+  border: 1px solid #333342;
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  outline: none;
+}
+
+.theme-checkbox:checked {
+  background: #00e5ff;
+  border-color: #00e5ff;
+}
+
+.theme-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  color: #000;
+  font-size: 12px;
+  font-weight: bold;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.theme-checkbox:hover {
+  border-color: #00e5ff;
+}
+
 /* Advanced Settings Panel */
 .advanced-settings-panel {
   margin-top: 20px;

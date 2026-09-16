@@ -220,21 +220,21 @@ function renderTimestampEditorUI() {
     html += `
       <div id="word-row-${index}" class="word-editor-row ${isSelected ? 'selected' : ''}" style="display:flex; flex-direction:column; gap:4px; background:#121218; padding:8px; border-radius:4px; border:1px solid ${isSelected ? '#00e5ff' : '#1a1a24'}; margin-bottom: 8px;">
         <div style="display:flex; align-items:center; gap:6px; flex-wrap: wrap;">
-          <input type="checkbox" data-index="${index}" ${isSelected ? 'checked' : ''} style="cursor:pointer;">
+          <input type="checkbox" data-index="${index}" ${isSelected ? 'checked' : ''} class="theme-checkbox" style="cursor:pointer;">
           <span style="font-size:0.7rem; color:#aaa; min-width:24px;">${index}</span>
-          <input type="text" value="${w.word.trim()}" onchange="updateWordData(${index}, 'word', this.value)" style="flex:2; min-width:100px; padding:4px; font-size:0.75rem; background:#09090c; border:1px solid #22222a; color:#fff; border-radius:3px;">
-          <input type="number" step="0.1" value="${parseFloat(w.start).toFixed(2)}" onchange="updateWordData(${index}, 'start', parseFloat(this.value))" style="width:50px; padding:4px; font-size:0.75rem; background:#09090c; border:1px solid #22222a; color:#fff; border-radius:3px;">
+          <input type="text" value="${w.word.trim()}" onchange="updateWordData(${index}, 'word', this.value)" oncopy="return false;" oncut="return false;" style="flex:1; min-width:60px; max-width:120px; padding:4px; font-size:0.75rem; background:#09090c; border:1px solid #22222a; color:#fff; border-radius:3px;">
+          <input type="number" step="0.1" value="${parseFloat(w.start).toFixed(2)}" onchange="updateWordData(${index}, 'start', parseFloat(this.value))" oncopy="return false;" oncut="return false;" style="width:50px; padding:4px; font-size:0.75rem; background:#09090c; border:1px solid #22222a; color:#fff; border-radius:3px;">
           <span style="font-size:0.7rem; color:#8a8a98;">-</span>
-          <input type="number" step="0.1" value="${parseFloat(w.end).toFixed(2)}" onchange="updateWordData(${index}, 'end', parseFloat(this.value))" style="width:50px; padding:4px; font-size:0.75rem; background:#09090c; border:1px solid #22222a; color:#fff; border-radius:3px;">
+          <input type="number" step="0.1" value="${parseFloat(w.end).toFixed(2)}" onchange="updateWordData(${index}, 'end', parseFloat(this.value))" oncopy="return false;" oncut="return false;" style="width:50px; padding:4px; font-size:0.75rem; background:#09090c; border:1px solid #22222a; color:#fff; border-radius:3px;">
 
           <button onclick="duplicateWordData(${index})" title="Duplicate word" style="background:#1a3a2a; color:#00ffcc; border:1px solid #2a5a3a; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.7rem;">📋</button>
           <button onclick="deleteWordData(${index})" style="background:#3a1a1a; color:#ff7777; border:1px solid #5a2a2a; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.7rem;">✕</button>
         </div>
         <div style="display:flex; align-items:center; gap:8px; font-size:0.7rem; color:#8a8a98; flex-wrap: wrap;">
           <span>Abs X:</span>
-          <input type="number" id="absX_${index}" step="1" value="${w.absX || 0}" oninput="updateWordAbsolutePosition(${index}, 'absX', parseFloat(this.value))" style="width:55px; padding:2px; font-size:0.7rem; background:#09090c; border:1px solid #22222a; color:#fff; border-radius:3px;">
+          <input type="number" id="absX_${index}" step="1" value="${w.absX || 0}" oninput="updateWordAbsolutePosition(${index}, 'absX', parseFloat(this.value))" oncopy="return false;" oncut="return false;" style="width:55px; padding:2px; font-size:0.7rem; background:#09090c; border:1px solid #22222a; color:#fff; border-radius:3px;">
           <span>Abs Y:</span>
-          <input type="number" id="absY_${index}" step="1" value="${w.absY || 0}" oninput="updateWordAbsolutePosition(${index}, 'absY', parseFloat(this.value))" style="width:55px; padding:2px; font-size:0.7rem; background:#09090c; border:1px solid #22222a; color:#fff; border-radius:3px;">
+          <input type="number" id="absY_${index}" step="1" value="${w.absY || 0}" oninput="updateWordAbsolutePosition(${index}, 'absY', parseFloat(this.value))" oncopy="return false;" oncut="return false;" style="width:55px; padding:2px; font-size:0.7rem; background:#09090c; border:1px solid #22222a; color:#fff; border-radius:3px;">
           <button onclick="resetWordPosition(${index})" style="background:#222230; color:#aaa; border:1px solid #333345; padding:2px 8px; border-radius:3px; cursor:pointer; font-size:0.65rem; margin-left:auto;">Reset Pos</button>
         </div>
       </div>
@@ -244,6 +244,12 @@ function renderTimestampEditorUI() {
   html += `</div>`;
 
   editorContent.innerHTML = html;
+
+  // Restore scroll position for timestamp editor
+  const savedEditorScroll = localStorage.getItem('timestamp_editor_scroll_position');
+  if (savedEditorScroll !== null && editorContent) {
+    editorContent.scrollTop = parseInt(savedEditorScroll, 10);
+  }
 
   // Attach row click listeners for selection (without needing checkbox toggle)
   const rows = editorContent.querySelectorAll('.word-editor-row');
@@ -271,6 +277,11 @@ function renderTimestampEditorUI() {
       const index = parseInt(cb.getAttribute('data-index'));
       toggleTimestampSelection(index, e, e.shiftKey);
     });
+  });
+  
+  // Save scroll position on scroll
+  editorContent.addEventListener('scroll', () => {
+    localStorage.setItem('timestamp_editor_scroll_position', editorContent.scrollTop.toString());
   });
 }
 
