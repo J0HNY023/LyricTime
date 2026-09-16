@@ -35,7 +35,9 @@ function pushToUndoStack() {
     wordLife: wordLifeInput.value,
     fadeOutDelay: fadeOutDelayInput.value,
     driftSpeed: driftInput.value,
-    textEffect: textEffectInput.value
+    textEffect: textEffectInput.value,
+    // Capture word object positions, scales, rotations
+    wordObjectsState: captureWordObjectsState()
   };
   
   undoStack.push(stateSnapshot);
@@ -44,6 +46,31 @@ function pushToUndoStack() {
   }
   // Clear redo stack when new action is performed
   redoStack = [];
+}
+
+// Capture current word objects state (positions, scales, rotations)
+function captureWordObjectsState() {
+  return wordObjects.map(obj => ({
+    x: obj.x,
+    y: obj.y,
+    scale: obj.scale || 1.0,
+    rotation: obj.rotation || 0,
+    dataIndex: obj.dataIndex
+  }));
+}
+
+// Restore word objects state from snapshot
+function restoreWordObjectsState(state) {
+  if (!state || !Array.isArray(state)) return;
+  
+  state.forEach((savedObj, idx) => {
+    if (wordObjects[idx] && savedObj.dataIndex === wordObjects[idx].dataIndex) {
+      wordObjects[idx].x = savedObj.x;
+      wordObjects[idx].y = savedObj.y;
+      wordObjects[idx].scale = savedObj.scale;
+      wordObjects[idx].rotation = savedObj.rotation;
+    }
+  });
 }
 
 function undo() {
@@ -62,7 +89,8 @@ function undo() {
     wordLife: wordLifeInput.value,
     fadeOutDelay: fadeOutDelayInput.value,
     driftSpeed: driftInput.value,
-    textEffect: textEffectInput.value
+    textEffect: textEffectInput.value,
+    wordObjectsState: captureWordObjectsState()
   };
   redoStack.push(currentState);
   
@@ -87,7 +115,8 @@ function redo() {
     wordLife: wordLifeInput.value,
     fadeOutDelay: fadeOutDelayInput.value,
     driftSpeed: driftInput.value,
-    textEffect: textEffectInput.value
+    textEffect: textEffectInput.value,
+    wordObjectsState: captureWordObjectsState()
   };
   undoStack.push(currentState);
   
@@ -127,6 +156,8 @@ function restoreStateFromSnapshot(snapshot) {
     } else {
       buildWordStructures();
     }
+    // Restore word object positions, scales, rotations after rebuild
+    restoreWordObjectsState(snapshot.wordObjectsState);
     drawFrameAtCurrentTime();
   }
   
