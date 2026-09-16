@@ -77,8 +77,10 @@ function buildWordStructures() {
         currentY += lineHeight;
       }
 
-      // Prevent bottom overflow
-      if (currentY > canvas.height - padding) return;
+      // Prevent bottom overflow by wrapping to top if needed
+      if (currentY > canvas.height - padding) {
+        currentY = padding + fontSize;
+      }
 
       const startTimeOffset = globalWordIndex * staggerDelay;
       const particles = [];
@@ -124,6 +126,37 @@ function buildWordStructures() {
       wordIdx++;
     });
     currentY += lineHeight; // Hard line break
+  });
+
+  // Clamp all words to safe area after positioning
+  const safePadding = 20;
+  wordObjects.forEach(word => {
+    // Clamp X position
+    if (word.x < safePadding) {
+      word.x = safePadding;
+      word.baseX = safePadding;
+      word.animX = safePadding;
+      word.targetX = safePadding;
+    }
+    if (word.x + word.width > canvas.width - safePadding) {
+      word.x = canvas.width - safePadding - word.width;
+      word.baseX = canvas.width - safePadding - word.width;
+      word.animX = canvas.width - safePadding - word.width;
+      word.targetX = canvas.width - safePadding - word.width;
+    }
+    // Clamp Y position
+    if (word.y < safePadding + fontSize) {
+      word.y = safePadding + fontSize;
+      word.baseY = safePadding + fontSize;
+      word.animY = safePadding + fontSize;
+      word.targetY = safePadding + fontSize;
+    }
+    if (word.y > canvas.height - safePadding) {
+      word.y = canvas.height - safePadding;
+      word.baseY = canvas.height - safePadding;
+      word.animY = canvas.height - safePadding;
+      word.targetY = canvas.height - safePadding;
+    }
   });
 }
 
@@ -272,6 +305,39 @@ function buildWordStructuresFromAudio(wordsData) {
     wordObjects.forEach(w => {
       w.y += shiftY;
       w.baseY += shiftY;
+      w.animY += shiftY;
+      w.targetY += shiftY;
+    });
+  } else {
+    // For non-subtitle layouts, clamp all words to safe area
+    const safePadding = 20;
+    wordObjects.forEach(word => {
+      // Clamp X position
+      if (word.x < safePadding) {
+        word.x = safePadding;
+        word.baseX = safePadding;
+        word.animX = safePadding;
+        word.targetX = safePadding;
+      }
+      if (word.x + word.width > canvas.width - safePadding) {
+        word.x = canvas.width - safePadding - word.width;
+        word.baseX = canvas.width - safePadding - word.width;
+        word.animX = canvas.width - safePadding - word.width;
+        word.targetX = canvas.width - safePadding - word.width;
+      }
+      // Clamp Y position
+      if (word.y < safePadding + fontSize) {
+        word.y = safePadding + fontSize;
+        word.baseY = safePadding + fontSize;
+        word.animY = safePadding + fontSize;
+        word.targetY = safePadding + fontSize;
+      }
+      if (word.y > canvas.height - safePadding) {
+        word.y = canvas.height - safePadding;
+        word.baseY = canvas.height - safePadding;
+        word.animY = canvas.height - safePadding;
+        word.targetY = canvas.height - safePadding;
+      }
     });
   }
 }
