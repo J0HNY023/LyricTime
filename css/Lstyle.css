@@ -10,6 +10,21 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  user-select: none;
+}
+
+/* Allow text selection only in input and textarea elements */
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="email"],
+input[type="search"],
+input[type="url"],
+textarea {
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
 }
 
 body {
@@ -240,6 +255,41 @@ canvas {
   box-shadow:
     inset 1px 0 0 rgba(255, 255, 255, 0.8),
     0 0 12px rgba(0, 229, 255, 0.897);
+}
+
+/* Theme-styled checkbox for timestamp editor */
+.theme-checkbox {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #09090c;
+  border: 1px solid #333342;
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  outline: none;
+}
+
+.theme-checkbox:checked {
+  background: #00e5ff;
+  border-color: #00e5ff;
+}
+
+.theme-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  color: #000;
+  font-size: 12px;
+  font-weight: bold;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.theme-checkbox:hover {
+  border-color: #00e5ff;
 }
 
 /* Advanced Settings Panel */

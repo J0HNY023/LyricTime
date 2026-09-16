@@ -522,7 +522,27 @@ canvas.addEventListener('pointerdown', (e) => {
     dragStartX = coords.x;
     dragStartY = coords.y;
 
-    if (selectedWordIndices.includes(hitIndex)) {
+    // Handle Shift+Click for range selection on canvas
+    if (e.shiftKey && selectedWordIndices.length > 0) {
+      // Add all indices from first selected to current hit
+      const firstIdx = selectedWordIndices[0];
+      const start = Math.min(firstIdx, hitIndex);
+      const end = Math.max(firstIdx, hitIndex);
+      for (let i = start; i <= end; i++) {
+        if (!selectedWordIndices.includes(i)) {
+          selectedWordIndices.push(i);
+        }
+      }
+      dragStartStates = selectedWordIndices
+        .filter(idx => wordObjects[idx] !== undefined)
+        .map(idx => ({
+          idx: idx,
+          startX: wordObjects[idx].x,
+          startY: wordObjects[idx].y,
+          startScale: wordObjects[idx].scale || 1.0,
+          startRotation: wordObjects[idx].rotation || 0
+        }));
+    } else if (selectedWordIndices.includes(hitIndex)) {
       dragStartStates = selectedWordIndices.map(idx => ({
         idx: idx,
         startX: wordObjects[idx].x,
@@ -567,13 +587,15 @@ canvas.addEventListener('pointerdown', (e) => {
       canvas.setPointerCapture(e.pointerId);
       dragStartX = coords.x;
       dragStartY = coords.y;
-      dragStartStates = selectedWordIndices.map(idx => ({
-        idx: idx, 
-        startX: wordObjects[idx].x, 
-        startY: wordObjects[idx].y, 
-        startScale: wordObjects[idx].scale || 1.0,
-        startRotation: wordObjects[idx].rotation || 0
-      }));
+      dragStartStates = selectedWordIndices
+        .filter(idx => wordObjects[idx] !== undefined)
+        .map(idx => ({
+          idx: idx, 
+          startX: wordObjects[idx].x, 
+          startY: wordObjects[idx].y, 
+          startScale: wordObjects[idx].scale || 1.0,
+          startRotation: wordObjects[idx].rotation || 0
+        }));
       // Check for rotation mode (Ctrl + Alt), resize mode (Alt only), or drag mode
       // Only allow resize/rotate when Alt is pressed
       if (isCtrlDown && isAltDown) {
@@ -948,6 +970,7 @@ function endDrag(e) {
     if (isAudioSyncMode) {
       buildWordStructuresFromAudio(activeWordsData);
     }
+    pushToUndoStack();
     saveState();
   }
 }
@@ -1077,6 +1100,7 @@ rotationSlider.addEventListener('input', () => {
         activeWordsData[wordObjects[idx].dataIndex].rotation = rotation;
       }
     });
+    pushToUndoStack();
     saveState();
     drawFrameAtCurrentTime();
   }

@@ -47,6 +47,11 @@ async function loadAudioFileFromDB() {
 
 // --- LocalStorage Persistence Helpers ---
 function saveState() {
+  // Save sidebar scroll position
+  const sidebarContent = document.querySelector('.sidebar-content');
+  const sidebarScrollTop = sidebarContent ? sidebarContent.scrollTop : 0;
+  localStorage.setItem('sidebar_scroll_position', sidebarScrollTop.toString());
+  
   const state = {
     text: textInput.value,
     fontStyle: fontStyleInput.value,
@@ -71,6 +76,17 @@ function saveState() {
     isAudioSyncMode: isAudioSyncMode
   };
   localStorage.setItem('dust_animation_state', JSON.stringify(state));
+}
+
+// Restore sidebar scroll position
+function restoreSidebarScrollPosition() {
+  const savedScroll = localStorage.getItem('sidebar_scroll_position');
+  if (savedScroll !== null) {
+    const sidebarContent = document.querySelector('.sidebar-content');
+    if (sidebarContent) {
+      sidebarContent.scrollTop = parseInt(savedScroll, 10);
+    }
+  }
 }
 
 async function loadState() {
@@ -149,4 +165,7 @@ async function loadState() {
   }
 
   renderWordChips();
+  
+  // Restore sidebar scroll position after all content is loaded
+  setTimeout(restoreSidebarScrollPosition, 150);
 }
