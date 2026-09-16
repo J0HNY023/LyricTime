@@ -30,8 +30,10 @@ function buildWordStructures() {
 
   const padding = 20;
   const maxLineWidth = canvas.width - (padding * 2);
-  let currentY = padding + fontSize;
-
+  
+  // Start at the center of the canvas for all layout modes
+  let currentY = (canvas.height / 2) - (fontSize / 2);
+  
   if (layoutModeInput.value === 'subtitle') {
     // Start near the bottom and let the standard wrap logic take over
     currentY = canvas.height - padding - (fontSize * 2);
@@ -43,7 +45,23 @@ function buildWordStructures() {
 
   rawLines.forEach((lineText, lineIndex) => {
     const words = lineText.trim().split(/\s+/).filter(w => w.length > 0);
-    let currentX = padding;
+    
+    // Calculate total width of all words on this line to center it
+    let totalLineWidth = 0;
+    words.forEach(wordText => {
+      let wWidth = 0;
+      wordText.split('').forEach(char => {
+        wWidth += ctx.measureText(char).width + tracking;
+      });
+      totalLineWidth += wWidth;
+    });
+    // Add gaps between words
+    if (words.length > 1) {
+      totalLineWidth += (words.length - 1) * effectiveSpaceWidth;
+    }
+    
+    // Start X position centered on canvas
+    let currentX = (canvas.width / 2) - (totalLineWidth / 2);
     let wordIdx = 0;
 
     words.forEach((wordText, idx) => {
@@ -53,8 +71,9 @@ function buildWordStructures() {
       });
 
       // WRAP LOGIC: If word exceeds canvas width, move to next line
-      if (currentX + wWidth > maxLineWidth && currentX > padding) {
-        currentX = padding;
+      if (currentX + wWidth > canvas.width - padding && currentX > padding) {
+        // Recalculate centered position for new line
+        currentX = (canvas.width / 2) - (totalLineWidth / 2);
         currentY += lineHeight;
       }
 
@@ -124,10 +143,34 @@ function buildWordStructuresFromAudio(wordsData) {
   const lineHeight = fontSize * 2.2;
   const padding = 20;
   const maxLineWidth = canvas.width - (padding * 2);
-  let currentY = padding + fontSize;
+  
+  // Start at the center of the canvas for all layout modes
+  let currentY = (canvas.height / 2) - (fontSize / 2);
+
+  if (layoutModeInput && layoutModeInput.value === 'subtitle') {
+    // Start near the bottom and let the standard wrap logic take over
+    currentY = canvas.height - padding - (fontSize * 2);
+  }
 
   let globalIdx = 0;
-  let currentX = padding;
+  
+  // Calculate total width of all words to center them
+  let totalLineWidth = 0;
+  wordsData.forEach(wordItem => {
+    let wWidth = 0;
+    wordItem.word.trim().split('').forEach(char => {
+      wWidth += ctx.measureText(char).width + tracking;
+    });
+    totalLineWidth += wWidth;
+  });
+  // Add gaps between words
+  const wordGap = parseFloat(centerXOffsetInput.value) || 0;
+  if (wordsData.length > 1) {
+    totalLineWidth += (wordsData.length - 1) * (spaceWidth + wordGap);
+  }
+  
+  // Start X position centered on canvas
+  let currentX = (canvas.width / 2) - (totalLineWidth / 2);
 
   wordsData.forEach((wordItem, idx) => {
     const currentIndex = globalIdx++;
@@ -137,12 +180,12 @@ function buildWordStructuresFromAudio(wordsData) {
     });
 
     // Add word gap for all layout modes (not just focused-center)
-    const wordGap = parseFloat(centerXOffsetInput.value) || 0;
     const effectiveSpaceWidth = spaceWidth + wordGap;
 
     // WRAP LOGIC
-    if (currentX + wWidth > maxLineWidth && currentX > padding) {
-      currentX = padding;
+    if (currentX + wWidth > canvas.width - padding && currentX > padding) {
+      // Recalculate centered position for new line
+      currentX = (canvas.width / 2) - (totalLineWidth / 2);
       currentY += lineHeight;
     }
 
