@@ -84,8 +84,8 @@ function clampWordToBounds(wordObj) {
   const padding = 20;
   const minX = padding;
   const maxX = canvas.width - rotWidth - padding;
-  const minY = padding + rotHeight;
-  const maxY = canvas.height - padding;
+  const minY = padding;
+  const maxY = canvas.height - rotHeight - padding;
   
   // Clamp X position
   if (wordObj.x < minX) wordObj.x = minX;
