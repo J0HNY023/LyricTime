@@ -37,7 +37,10 @@ function pushToUndoStack() {
     driftSpeed: driftInput.value,
     textEffect: textEffectInput.value,
     // Capture word object positions, scales, rotations
-    wordObjectsState: captureWordObjectsState()
+    wordObjectsState: captureWordObjectsState(),
+    // Capture timestamp editor scroll position
+    timestampEditorScroll: document.querySelector('.editor-content')?.scrollTop || 0,
+    sidebarScroll: document.querySelector('.sidebar-content')?.scrollTop || 0
   };
   
   undoStack.push(stateSnapshot);
@@ -90,7 +93,9 @@ function undo() {
     fadeOutDelay: fadeOutDelayInput.value,
     driftSpeed: driftInput.value,
     textEffect: textEffectInput.value,
-    wordObjectsState: captureWordObjectsState()
+    wordObjectsState: captureWordObjectsState(),
+    timestampEditorScroll: document.querySelector('.editor-content')?.scrollTop || 0,
+    sidebarScroll: document.querySelector('.sidebar-content')?.scrollTop || 0
   };
   redoStack.push(currentState);
   
@@ -116,7 +121,9 @@ function redo() {
     fadeOutDelay: fadeOutDelayInput.value,
     driftSpeed: driftInput.value,
     textEffect: textEffectInput.value,
-    wordObjectsState: captureWordObjectsState()
+    wordObjectsState: captureWordObjectsState(),
+    timestampEditorScroll: document.querySelector('.editor-content')?.scrollTop || 0,
+    sidebarScroll: document.querySelector('.sidebar-content')?.scrollTop || 0
   };
   undoStack.push(currentState);
   
@@ -164,6 +171,20 @@ function restoreStateFromSnapshot(snapshot) {
   // Update char counter
   updateCharCounter();
   renderWordChips();
+  
+  // Restore scroll positions
+  if (snapshot.timestampEditorScroll !== undefined) {
+    const editorContent = document.querySelector('.editor-content');
+    if (editorContent) {
+      editorContent.scrollTop = snapshot.timestampEditorScroll;
+    }
+  }
+  if (snapshot.sidebarScroll !== undefined) {
+    const sidebarContent = document.querySelector('.sidebar-content');
+    if (sidebarContent) {
+      sidebarContent.scrollTop = snapshot.sidebarScroll;
+    }
+  }
   
   saveState();
 }
