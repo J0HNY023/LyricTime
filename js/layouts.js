@@ -106,21 +106,6 @@ function buildWordStructures() {
     });
     currentY += lineHeight; // Hard line break
   });
-
-  // Apply auto-alignment clamping after building
-  wordObjects.forEach(wordObj => clampWordToBounds(wordObj));
-
-  // Shift entire block to bottom for Subtitle layout
-  if (layoutModeInput && layoutModeInput.value === 'subtitle') {
-    let maxY = 0;
-    wordObjects.forEach(w => { if (w.y > maxY) maxY = w.y; });
-
-    let shiftY = (canvas.height - padding) - maxY;
-    wordObjects.forEach(w => {
-      w.y += shiftY;
-      w.baseY += shiftY;
-    });
-  }
 }
 
 function buildWordStructuresFromAudio(wordsData) {
@@ -234,8 +219,6 @@ function buildWordStructuresFromAudio(wordsData) {
     editorContainer.classList.remove('collapsed');
     document.getElementById('editorToggleBtn').textContent = '▼ Collapse';
   }
-
-  wordObjects.forEach(wordObj => clampWordToBounds(wordObj));
 
   // Shift entire block to bottom for Subtitle layout
   if (layoutModeInput && layoutModeInput.value === 'subtitle') {
