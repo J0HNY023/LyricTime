@@ -374,10 +374,11 @@ document.addEventListener('keydown', (e) => {
     }
   }
 
+  // Arrow keys for audio scrubbing (only when audio exists and not in text input)
   if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
     if (isTextInput) return;
 
-    if (audioElement.duration) {
+    if (audioElement.src && audioElement.duration) {
       e.preventDefault();
       const step = getScrubStepInSeconds();
 
@@ -393,6 +394,31 @@ document.addEventListener('keydown', (e) => {
       if (audioElement.paused) {
         drawFrameAtCurrentTime();
       }
+    }
+  }
+});
+
+// Skip Back/Forward button click handlers
+skipBackBtn.addEventListener('click', () => {
+  if (audioElement.src && audioElement.duration) {
+    const step = getScrubStepInSeconds();
+    audioElement.currentTime = Math.max(0, audioElement.currentTime - step);
+    timelineSlider.value = (audioElement.currentTime / audioElement.duration) * 100;
+    timeDisplay.textContent = `${formatTime(audioElement.currentTime)} / ${formatTime(audioElement.duration)}`;
+    if (audioElement.paused) {
+      drawFrameAtCurrentTime();
+    }
+  }
+});
+
+skipForwardBtn.addEventListener('click', () => {
+  if (audioElement.src && audioElement.duration) {
+    const step = getScrubStepInSeconds();
+    audioElement.currentTime = Math.min(audioElement.duration, audioElement.currentTime + step);
+    timelineSlider.value = (audioElement.currentTime / audioElement.duration) * 100;
+    timeDisplay.textContent = `${formatTime(audioElement.currentTime)} / ${formatTime(audioElement.duration)}`;
+    if (audioElement.paused) {
+      drawFrameAtCurrentTime();
     }
   }
 });
