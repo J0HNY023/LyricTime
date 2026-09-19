@@ -3,19 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minimal Single Line Text</title>
+    <title>Minimal Single Line Text - Styled</title>
+    <link rel="stylesheet" href="css/Lstyle.css">
     <style>
+        /* Override some layout styles for this minimal version */
         body {
-            margin: 0;
-            padding: 0;
             background-color: #050505;
-            overflow: hidden;
-            font-family: 'Arial', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        }
+
+        .main-content {
+            width: 100%;
+        }
+
+        .canvas-area {
+            padding: 0;
+        }
+
+        .canvas-viewport {
+            max-width: 100%;
+            border-radius: 0;
+            box-shadow: none;
+            aspect-ratio: auto;
             height: 100vh;
-            color: white;
         }
 
         canvas {
@@ -32,245 +41,649 @@
             top: 20px;
             left: 20px;
             z-index: 10;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(18, 18, 22, 0.95);
+            backdrop-filter: blur(8px);
             padding: 15px;
             border-radius: 8px;
-            border: 1px solid #333;
+            border: 1px solid #22222a;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        #ui-layer::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #ui-layer::-webkit-scrollbar-track {
+            background: #0a0a0e;
+            border-radius: 3px;
+        }
+
+        #ui-layer::-webkit-scrollbar-thumb {
+            background: #5a5a6a;
+            border-radius: 3px;
+            border: 2px solid #0a0a0e;
+            box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.3), 0 0 8px rgb(217, 217, 252);
+        }
+
+        #ui-layer::-webkit-scrollbar-thumb:hover {
+            background: #7a7a8a;
+            box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.8), 0 0 12px rgba(0, 229, 255, 0.897);
         }
 
         .control-group {
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
 
-        label {
+        .control-group label {
             display: block;
-            font-size: 12px;
-            margin-bottom: 5px;
-            color: #aaa;
+            font-size: 0.7rem;
+            margin-bottom: 6px;
+            color: #8a8a98;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
         }
 
-        textarea, input[type="range"], select {
-            width: 100%;
-            background: #222;
-            border: 1px solid #444;
-            color: white;
-            padding: 5px;
+        textarea {
+            background: #09090c;
+            border: 1px solid #22222a;
+            color: #fff;
+            padding: 8px;
             border-radius: 4px;
+            font-family: inherit;
+            outline: none;
+            width: 100%;
+            min-height: 85px;
+            resize: vertical;
+            line-height: 1.5;
         }
-        
+
+        textarea:focus {
+            border-color: #00e5ff;
+        }
+
+        input[type="range"] {
+            accent-color: #aaaaaa;
+            padding: 0;
+            width: 100%;
+        }
+
+        input[type="text"] {
+            background: #09090c;
+            border: 1px solid #22222a;
+            color: #fff;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: inherit;
+            outline: none;
+            width: 100%;
+        }
+
+        input[type="text"]:focus {
+            border-color: #00e5ff;
+        }
+
         button {
-            background: #444;
-            color: white;
+            background: #e6e6ea;
+            color: #000;
             border: none;
-            padding: 8px 12px;
+            padding: 12px;
             cursor: pointer;
             border-radius: 4px;
             width: 100%;
-            margin-top: 5px;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
         }
 
         button:hover {
-            background: #666;
+            background: #ffffff;
+        }
+
+        button.secondary {
+            background: #22222a;
+            color: #fff;
+            border: 1px solid #333342;
+        }
+
+        button.secondary:hover {
+            background: #333342;
+        }
+
+        .value-display {
+            font-size: 0.75rem;
+            color: #8a8a98;
+            font-family: monospace;
+            float: right;
+        }
+
+        h2 {
+            border-bottom: 1px solid #22222a;
+            color: #d0d0da;
+            font-size: 1.1rem;
+            letter-spacing: 0.05em;
+            padding-bottom: 8px;
+            padding-left: 8px;
+            text-transform: uppercase;
+            margin: 16px 0 12px 0;
+        }
+
+        .file-upload-group {
+            margin-bottom: 12px;
+        }
+
+        .upload-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .custom-file-upload {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e94560;
+            border: 1px solid #0f3460;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
+        }
+
+        .custom-file-upload:hover {
+            background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
+            border-color: #e94560;
+            box-shadow: 0 4px 12px rgba(233, 69, 96, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .upload-container input[type="file"] {
+            position: absolute;
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .file-name {
+            font-size: 0.75rem;
+            color: #8a8a98;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .time-display {
+            font-size: 0.75rem;
+            font-family: monospace;
+            color: #8a8a98;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        select {
+            background: #09090c;
+            border: 1px solid #22222a;
+            border-radius: 4px;
+            color: #fff;
+            font-family: inherit;
+            outline: none;
+            padding: 8px;
+            width: 100%;
+        }
+
+        select:focus {
+            border-color: #00e5ff;
         }
     </style>
 </head>
 <body>
+    <div class="main-content">
+        <div class="canvas-area">
+            <div class="canvas-viewport">
+                <canvas id="canvas"></canvas>
+            </div>
+        </div>
+    </div>
 
     <!-- UI Controls -->
     <div id="ui-layer">
+        <h2>Text Input</h2>
         <div class="control-group">
-            <label>Text Input</label>
-            <textarea id="textInput" rows="4">The quick brown fox jumps over the lazy dog. We are building a single line layout.</textarea>
+            <textarea id="textInput" placeholder="Enter or paste your text here...">The quick brown fox jumps over the lazy dog. We are building a single line layout.</textarea>
         </div>
         
+        <h2>Display Settings</h2>
         <div class="control-group">
-            <label>Words Visible (Max)</label>
+            <label>Words Visible <span id="wordCountVal" class="value-display">4</span></label>
             <input type="range" id="wordCount" min="1" max="10" value="4">
-            <span id="wordCountVal">4</span>
         </div>
 
         <div class="control-group">
-            <label>Speed (ms per word)</label>
-            <input type="range" id="speed" min="100" max="2000" step="50" value="500">
-            <span id="speedVal">500</span> ms
+            <label>Font Size <span id="fontSizeVal" class="value-display">48px</span></label>
+            <input type="range" id="fontSize" min="24" max="120" step="2" value="48">
         </div>
 
-        <button id="resetBtn">Reset / Restart</button>
+        <div class="control-group">
+            <label>Word Gap <span id="wordGapVal" class="value-display">20px</span></label>
+            <input type="range" id="wordGap" min="0" max="100" step="1" value="20">
+        </div>
+
+        <div class="control-group">
+            <label>Font Style</label>
+            <select id="fontStyle">
+                <option value='Arial' selected>Arial (Sans-Serif)</option>
+                <option value='Georgia'>Georgia (Serif)</option>
+                <option value='"Courier New", monospace'>Courier New (Monospace)</option>
+                <option value='"Times New Roman", serif'>Times New Roman</option>
+                <option value='Impact'>Impact (Bold)</option>
+                <option value='"Helvetica Neue", sans-serif'>Helvetica</option>
+            </select>
+        </div>
+
+        <h2>Timing Control</h2>
+        <div class="control-group">
+            <label>Speed (ms per word) <span id="speedVal" class="value-display">500 ms</span></label>
+            <input type="range" id="speed" min="100" max="2000" step="50" value="500">
+        </div>
+
+        <div class="control-group">
+            <label>Current Time <span id="timeVal" class="value-display">0.0s</span></label>
+        </div>
+        <div class="time-display" id="timeDisplay">0:00 / 0:00</div>
+
+        <h2>Audio Sync (Optional)</h2>
+        <div class="file-upload-group">
+            <label for="audioUpload">Upload Audio File</label>
+            <div class="upload-container">
+                <label for="audioUpload" class="custom-file-upload">
+                    <i class="fas fa-cloud-upload-alt"></i> Choose Audio
+                </label>
+                <input type="file" id="audioUpload" accept="audio/*">
+                <span id="audioFileName" class="file-name">No file chosen</span>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button id="resetBtn" class="secondary">↺ Reset</button>
+            <button id="playPauseBtn">▶ Play</button>
+        </div>
     </div>
 
-    <canvas id="canvas"></canvas>
+    <script>
+        /**
+         * MINIMAL SINGLE-LINE VERSION WITH APP STYLING
+         * Core logic from minimal-single-line.html
+         * Styles and UI from index.html
+         */
 
-<script>
-    /**
-     * MINIMAL RESET VERSION
-     * - No complex effects
-     * - No audio sync
-     * - No multiple layout modes
-     * - Just: Single Line Logic
-     */
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // UI Elements
+        const textInput = document.getElementById('textInput');
+        const wordCountInput = document.getElementById('wordCount');
+        const wordCountVal = document.getElementById('wordCountVal');
+        const fontSizeInput = document.getElementById('fontSize');
+        const fontSizeVal = document.getElementById('fontSizeVal');
+        const wordGapInput = document.getElementById('wordGap');
+        const wordGapVal = document.getElementById('wordGapVal');
+        const speedInput = document.getElementById('speed');
+        const speedVal = document.getElementById('speedVal');
+        const timeVal = document.getElementById('timeVal');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const fontStyleSelect = document.getElementById('fontStyle');
+        const resetBtn = document.getElementById('resetBtn');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const audioUpload = document.getElementById('audioUpload');
+        const audioFileName = document.getElementById('audioFileName');
 
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    
-    // UI Elements
-    const textInput = document.getElementById('textInput');
-    const wordCountInput = document.getElementById('wordCount');
-    const wordCountVal = document.getElementById('wordCountVal');
-    const speedInput = document.getElementById('speed');
-    const speedVal = document.getElementById('speedVal');
-    const resetBtn = document.getElementById('resetBtn');
+        // State
+        let words = [];
+        let currentTime = 0;
+        let lastFrameTime = 0;
+        let wordDuration = 500; // ms per word
+        let maxVisibleWords = 4;
+        let fontSize = 48;
+        let wordGap = 20;
+        let isPlaying = true;
+        let audioContext = null;
+        let audioBuffer = null;
+        let audioSource = null;
+        let audioStartTime = 0;
+        let audioPausedAt = 0;
 
-    // State
-    let words = [];
-    let currentTime = 0;
-    let lastFrameTime = 0;
-    let wordDuration = 500; // ms per word
-    let maxVisibleWords = 4;
-    
-    // Resize handling
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resize);
-    resize();
-
-    // Update UI displays
-    wordCountInput.addEventListener('input', (e) => {
-        maxVisibleWords = parseInt(e.target.value);
-        wordCountVal.textContent = maxVisibleWords;
-    });
-
-    speedInput.addEventListener('input', (e) => {
-        wordDuration = parseInt(e.target.value);
-        speedVal.textContent = wordDuration;
-    });
-
-    resetBtn.addEventListener('click', () => {
-        currentTime = 0;
-        lastFrameTime = performance.now();
-        parseText();
-    });
-
-    textInput.addEventListener('input', parseText);
-
-    function parseText() {
-        const raw = textInput.value.trim();
-        // Split by whitespace and filter empty strings
-        words = raw.split(/\s+/).filter(w => w.length > 0);
-    }
-
-    // Initialize
-    parseText();
-    lastFrameTime = performance.now();
-
-    /**
-     * CORE LOGIC: SINGLE LINE CONTAINER
-     * 
-     * Concept:
-     * 1. Calculate which "slice" of words should be visible based on time.
-     * 2. Draw them in a straight horizontal line at the center.
-     */
-    function draw() {
-        const now = performance.now();
-        const dt = now - lastFrameTime;
-        lastFrameTime = now;
-
-        // Advance time
-        currentTime += dt;
-
-        // Clear Screen
-        ctx.fillStyle = '#050505';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        if (words.length === 0) {
-            requestAnimationFrame(draw);
-            return;
+        // Resize handling
+        function resize() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
         }
+        window.addEventListener('resize', resize);
+        resize();
 
-        // 1. Determine Current Word Index based on time
-        // How many full durations have passed?
-        const totalIndex = Math.floor(currentTime / wordDuration);
-        
-        // Clamp to valid range - NO LOOPING
-        const clampedIndex = Math.min(totalIndex, words.length - 1);
+        // Update UI displays
+        wordCountInput.addEventListener('input', (e) => {
+            maxVisibleWords = parseInt(e.target.value);
+            wordCountVal.textContent = maxVisibleWords;
+        });
 
-        // 2. Determine the "Window" of words to show
-        // We want to show 'maxVisibleWords' ending at or before the current word
-        const visibleWords = [];
-        
-        // Calculate the start index of our window
-        // We want the current word to be the rightmost (last) in our display
-        let windowStart = clampedIndex - maxVisibleWords + 1;
-        
-        // Ensure we don't go below 0
-        if (windowStart < 0) {
-            windowStart = 0;
-        }
-        
-        // Collect words in the window
-        for (let i = 0; i < maxVisibleWords; i++) {
-            const idx = windowStart + i;
+        fontSizeInput.addEventListener('input', (e) => {
+            fontSize = parseInt(e.target.value);
+            fontSizeVal.textContent = fontSize + 'px';
+        });
+
+        wordGapInput.addEventListener('input', (e) => {
+            wordGap = parseInt(e.target.value);
+            wordGapVal.textContent = wordGap + 'px';
+        });
+
+        speedInput.addEventListener('input', (e) => {
+            wordDuration = parseInt(e.target.value);
+            speedVal.textContent = wordDuration + ' ms';
+        });
+
+        fontStyleSelect.addEventListener('change', () => {
+            // Font change will be applied on next draw
+        });
+
+        resetBtn.addEventListener('click', () => {
+            if (audioBuffer) {
+                stopAudio();
+                audioPausedAt = 0;
+            }
+            currentTime = 0;
+            lastFrameTime = performance.now();
+            parseText();
+            updateTimeDisplay();
+        });
+
+        playPauseBtn.addEventListener('click', togglePlayPause);
+
+        textInput.addEventListener('input', parseText);
+
+        // Audio file upload handler
+        audioUpload.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            audioFileName.textContent = file.name;
+
+            try {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+
+                const arrayBuffer = await file.arrayBuffer();
+                audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                
+                // Calculate total duration
+                const duration = audioBuffer.duration;
+                const minutes = Math.floor(duration / 60);
+                const seconds = Math.floor(duration % 60);
+                timeDisplay.textContent = `0:00 / ${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                console.log('Audio loaded:', file.name, 'Duration:', duration.toFixed(2) + 's');
+            } catch (err) {
+                console.error('Error loading audio:', err);
+                audioFileName.textContent = 'Error loading file';
+            }
+        });
+
+        function parseText() {
+            const raw = textInput.value.trim();
+            // Split by whitespace and filter empty strings
+            words = raw.split(/\s+/).filter(w => w.length > 0);
             
-            // Only add if within bounds
-            if (idx < words.length) {
-                visibleWords.push({
-                    text: words[idx],
-                    offset: i
-                });
+            // Update total duration estimate
+            if (!audioBuffer) {
+                const totalDuration = (words.length * wordDuration) / 1000;
+                const minutes = Math.floor(totalDuration / 60);
+                const seconds = Math.floor(totalDuration % 60);
+                timeDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')} / ${minutes}:${seconds.toString().padStart(2, '0')}`;
             }
         }
 
-        // 3. Render the Container Line
-        renderSingleLineContainer(visibleWords);
-
-        requestAnimationFrame(draw);
-    }
-
-    function renderSingleLineContainer(wordObjects) {
-        ctx.font = "bold 48px Arial";
-        ctx.textBaseline = "middle";
-        ctx.textAlign = "left"; // Explicitly set left alignment to fix overlap issues
-        
-        // Measure total width to center the whole group
-        let totalWidth = 0;
-        const gap = 20; // Space between words
-        
-        wordObjects.forEach(obj => {
-            const metrics = ctx.measureText(obj.text);
-            totalWidth += metrics.width;
-        });
-        
-        // Add gaps
-        if (wordObjects.length > 1) {
-            totalWidth += (wordObjects.length - 1) * gap;
+        function togglePlayPause() {
+            if (audioBuffer) {
+                if (isPlaying) {
+                    pauseAudio();
+                } else {
+                    playAudio();
+                }
+            } else {
+                // No audio, just toggle time-based playback
+                isPlaying = !isPlaying;
+                playPauseBtn.textContent = isPlaying ? '⏸ Pause' : '▶ Play';
+                if (isPlaying) {
+                    lastFrameTime = performance.now();
+                }
+            }
         }
 
-        // Starting X position (Centered)
-        let currentX = (canvas.width - totalWidth) / 2;
-        const centerY = canvas.height / 2;
+        function playAudio() {
+            if (!audioBuffer) return;
+            
+            audioSource = audioContext.createBufferSource();
+            audioSource.buffer = audioBuffer;
+            audioSource.connect(audioContext.destination);
+            
+            const offset = audioPausedAt % audioBuffer.duration;
+            audioSource.start(0, offset);
+            audioStartTime = audioContext.currentTime - offset;
+            
+            audioSource.onended = () => {
+                if (audioContext.currentTime - audioStartTime >= audioBuffer.duration) {
+                    // Audio finished naturally
+                    isPlaying = false;
+                    playPauseBtn.textContent = '▶ Play';
+                    audioPausedAt = 0;
+                }
+            };
+            
+            isPlaying = true;
+            playPauseBtn.textContent = '⏸ Pause';
+            lastFrameTime = performance.now();
+        }
 
-        // Draw each word
-        wordObjects.forEach((obj, index) => {
-            const metrics = ctx.measureText(obj.text);
+        function pauseAudio() {
+            if (audioSource) {
+                audioSource.stop();
+                audioSource = null;
+            }
             
-            // Position: move by half of current word width to center it
-            const x = currentX + (metrics.width / 2);
+            if (audioStartTime > 0) {
+                audioPausedAt = audioContext.currentTime - audioStartTime;
+            }
             
-            // Basic styling
-            ctx.fillStyle = "#ffffff";
+            isPlaying = false;
+            playPauseBtn.textContent = '▶ Play';
+        }
+
+        function stopAudio() {
+            if (audioSource) {
+                audioSource.stop();
+                audioSource = null;
+            }
+            audioPausedAt = 0;
+            isPlaying = false;
+            playPauseBtn.textContent = '▶ Play';
+        }
+
+        function getAudioTime() {
+            if (!audioBuffer || !isPlaying) {
+                return audioPausedAt * 1000; // Return in ms
+            }
+            return (audioContext.currentTime - audioStartTime) * 1000; // Return in ms
+        }
+
+        function updateTimeDisplay() {
+            const currentSeconds = audioBuffer ? (audioPausedAt / 1000) : (currentTime / 1000);
+            const totalSeconds = audioBuffer ? audioBuffer.duration : (words.length * wordDuration / 1000);
+            
+            const curMin = Math.floor(currentSeconds / 60);
+            const curSec = Math.floor(currentSeconds % 60);
+            const totMin = Math.floor(totalSeconds / 60);
+            const totSec = Math.floor(totalSeconds % 60);
+            
+            timeDisplay.textContent = `${curMin}:${curSec.toString().padStart(2, '0')} / ${totMin}:${totSec.toString().padStart(2, '0')}`;
+            timeVal.textContent = currentSeconds.toFixed(1) + 's';
+        }
+
+        // Initialize
+        parseText();
+        lastFrameTime = performance.now();
+
+        /**
+         * CORE LOGIC: SINGLE LINE CONTAINER
+         * 
+         * Concept:
+         * 1. Calculate which "slice" of words should be visible based on time.
+         * 2. Draw them in a straight horizontal line at the center.
+         */
+        function draw() {
+            const now = performance.now();
+            const dt = now - lastFrameTime;
+            lastFrameTime = now;
+
+            // Advance time only if playing
+            if (isPlaying) {
+                if (audioBuffer) {
+                    currentTime = getAudioTime();
+                } else {
+                    currentTime += dt;
+                }
+            }
+
+            // Clear Screen
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (words.length === 0) {
+                requestAnimationFrame(draw);
+                return;
+            }
+
+            // 1. Determine Current Word Index based on time
+            const totalIndex = Math.floor(currentTime / wordDuration);
+            
+            // Clamp to valid range - NO LOOPING
+            const clampedIndex = Math.min(totalIndex, words.length - 1);
+
+            // 2. Determine the "Window" of words to show
+            const visibleWords = [];
+            
+            // Calculate the start index of our window
+            // We want the current word to be the rightmost (last) in our display
+            let windowStart = clampedIndex - maxVisibleWords + 1;
+            
+            // Ensure we don't go below 0
+            if (windowStart < 0) {
+                windowStart = 0;
+            }
+            
+            // Collect words in the window
+            for (let i = 0; i < maxVisibleWords; i++) {
+                const idx = windowStart + i;
+                
+                // Only add if within bounds
+                if (idx < words.length) {
+                    visibleWords.push({
+                        text: words[idx],
+                        offset: i,
+                        wordIndex: idx
+                    });
+                }
+            }
+
+            // 3. Render the Container Line
+            renderSingleLineContainer(visibleWords);
+
+            // Update time display
+            updateTimeDisplay();
+
+            requestAnimationFrame(draw);
+        }
+
+        function renderSingleLineContainer(wordObjects) {
+            const fontStyle = fontStyleSelect.value;
+            ctx.font = `bold ${fontSize}px ${fontStyle}`;
+            ctx.textBaseline = "middle";
+            ctx.textAlign = "left";
+            
+            // Measure total width to center the whole group
+            let totalWidth = 0;
+            
+            wordObjects.forEach(obj => {
+                const metrics = ctx.measureText(obj.text);
+                totalWidth += metrics.width;
+            });
+            
+            // Add gaps
+            if (wordObjects.length > 1) {
+                totalWidth += (wordObjects.length - 1) * wordGap;
+            }
+
+            // Starting X position (Centered)
+            let currentX = (canvas.width - totalWidth) / 2;
+            const centerY = canvas.height / 2;
+
+            // Get current word index for opacity calculation
+            const totalIndex = Math.floor(currentTime / wordDuration);
+            const currentWordIndex = Math.min(totalIndex, words.length - 1);
+
+            // Draw each word
+            wordObjects.forEach((obj, index) => {
+                const metrics = ctx.measureText(obj.text);
+                
+                // Position: move by half of current word width to center it
+                const x = currentX + (metrics.width / 2);
+                
+                // Calculate opacity based on whether this is the active word
+                let opacity = 1.0;
+                const wordAge = currentTime - (obj.wordIndex * wordDuration);
+                const fadeInDuration = wordDuration * 0.2; // 20% of duration for fade-in
+                
+                if (wordAge < 0) {
+                    opacity = 0;
+                } else if (wordAge <= fadeInDuration) {
+                    opacity = wordAge / fadeInDuration;
+                } else if (index < wordObjects.length - 1) {
+                    // Older words fade out slightly
+                    const fadeOutProgress = Math.min((wordObjects.length - 1 - index) * 0.3, 0.6);
+                    opacity = Math.max(0.4 - fadeOutProgress, 0.2);
+                }
+                
+                // Basic styling
+                ctx.fillStyle = "#ffffff";
+                ctx.globalAlpha = opacity;
+
+                ctx.fillText(obj.text, x, centerY);
+
+                // Move position for next word: add full width + gap
+                currentX += metrics.width + wordGap;
+            });
+            
             ctx.globalAlpha = 1.0;
+        }
 
-            ctx.fillText(obj.text, x, centerY);
-
-            // Move position for next word: add full width + gap
-            currentX += metrics.width + gap;
-        });
-    }
-
-    // Start Loop
-    requestAnimationFrame(draw);
-
-</script>
+        // Start Loop
+        requestAnimationFrame(draw);
+    </script>
 </body>
 </html>
