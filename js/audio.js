@@ -163,7 +163,7 @@ audioElement.addEventListener('ended', async () => {
 });
 
 // --- XMLHttpRequest with Forced Text Alignment & Progress ---
-function transcribeAudioWithProgress(file, apiKey) {
+function transcribeAudioWithProgress(file, apiKey, useLineBreaks = false) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     const formData = new FormData();
@@ -173,9 +173,17 @@ function transcribeAudioWithProgress(file, apiKey) {
     formData.append('response_format', 'verbose_json');
     formData.append('timestamp_granularities[]', 'word');
 
-    const exactTextPrompt = textInput.value.trim();
-    if (exactTextPrompt) {
-      formData.append('prompt', exactTextPrompt);
+    // Get line breaks from storage if enabled
+    let promptText = textInput.value.trim();
+    if (useLineBreaks) {
+      const lineBreaksText = localStorage.getItem('lyrics_line_breaks');
+      if (lineBreaksText && lineBreaksText.trim()) {
+        promptText = lineBreaksText.trim();
+      }
+    }
+    
+    if (promptText) {
+      formData.append('prompt', promptText);
     }
 
     let processInterval;
@@ -236,7 +244,7 @@ function transcribeAudioWithProgress(file, apiKey) {
 }
 
 // --- WhisperX Server-side Transcription ---
-async function transcribeWithWhisperX(file) {
+async function transcribeWithWhisperX(file, useLineBreaks = false) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     const formData = new FormData();
@@ -244,9 +252,14 @@ async function transcribeWithWhisperX(file) {
     formData.append('file', file);
     formData.append('mode', 'whisperx');
 
-    // Read and attach the reference text prompt if present
-    const promptInput = document.getElementById('textInput');
-    const promptText = promptInput ? promptInput.value.trim() : '';
+    // Get line breaks from storage if enabled
+    let promptText = textInput.value.trim();
+    if (useLineBreaks) {
+      const lineBreaksText = localStorage.getItem('lyrics_line_breaks');
+      if (lineBreaksText && lineBreaksText.trim()) {
+        promptText = lineBreaksText.trim();
+      }
+    }
 
     if (promptText) {
       formData.append('prompt', promptText);
@@ -358,6 +371,10 @@ processAudioBtn.addEventListener('click', async () => {
 
   // Get selected transcription mode
   const transcriptionMode = transcriptionModeSelect ? transcriptionModeSelect.value : 'groq';
+  
+  // Check if line breaks should be used as prompt
+  const useLineBreaksCheckbox = document.getElementById('useLineBreaksPrompt');
+  const useLineBreaks = useLineBreaksCheckbox ? useLineBreaksCheckbox.checked : false;
 
   processAudioBtn.disabled = true;
 
@@ -373,7 +390,7 @@ processAudioBtn.addEventListener('click', async () => {
 
     if (transcriptionMode === 'whisperx') {
       // Use local WhisperX server
-      wordTimestamps = await transcribeWithWhisperX(file);
+      wordTimestamps = await transcribeWithWhisperX(file, useLineBreaks);
     } else {
       // Use Groq Cloud API
       processAudioBtn.textContent = 'Loading API key...';
@@ -383,7 +400,7 @@ processAudioBtn.addEventListener('click', async () => {
         throw new Error('The "api" file was empty. Please add your key into it.');
       }
 
-      wordTimestamps = await transcribeAudioWithProgress(file, apiKey);
+      wordTimestamps = await transcribeAudioWithProgress(file, apiKey, useLineBreaks);
     }
 
     isAudioSyncMode = true;

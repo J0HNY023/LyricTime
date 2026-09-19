@@ -59,7 +59,10 @@
     <!-- Bottom Timestamp Editor (Collapsible) -->
     <div id="timestampEditorContainer" class="bottom-editor collapsed">
       <div class="editor-header" onclick="toggleEditor()">
-        <span class="editor-title">SYNCED WORDS & POSITIONS</span>
+        <div style="display:flex; align-items:center; gap:12px; flex:1;">
+          <span class="editor-title">SYNCED WORDS & POSITIONS</span>
+          <button onclick="downloadTimestamps(); event.stopPropagation();" title="Download timestamps as JSON file" style="background:#0e3a2a; color:#00ffcc; border:1px solid #2a5a3a; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:0.7rem; white-space:nowrap;">⬇ Download</button>
+        </div>
         <button class="toggle-btn" id="editorToggleBtn">▲ Expand</button>
       </div>
       <div class="editor-content">
@@ -162,6 +165,16 @@
         </select>
         <span id="transcriptionModeDesc" style="font-size:0.65rem; color:#6a6a78; display:block; margin-top:4px;">
           Groq: Fast cloud-based transcription (requires API key). WhisperX: Local processing (requires server running).
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label for="useLineBreaksPrompt">
+          <span>Use Line Breaks as Prompt</span>
+          <input type="checkbox" id="useLineBreaksPrompt" name="useLineBreaksPrompt" checked style="width:auto; margin:0;" title="When enabled, uses the line breaks reference text instead of the prompt field for timestamp alignment">
+        </label>
+        <span style="font-size:0.65rem; color:#6a6a78; display:block; margin-top:4px;">
+          Uses the LINE BREAKS REFERENCE text from the editor below for better timestamp alignment based on your lyrics structure.
         </span>
       </div>
 
