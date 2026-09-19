@@ -192,32 +192,34 @@
         // How many full durations have passed?
         const totalIndex = Math.floor(currentTime / wordDuration);
         
-        // Loop back if we reach the end (optional, or just stop)
-        const loopedIndex = totalIndex % words.length;
+        // Clamp to valid range - NO LOOPING
+        const clampedIndex = Math.min(totalIndex, words.length - 1);
 
         // 2. Determine the "Window" of words to show
-        // We want to show 'maxVisibleWords' ending at the current word
+        // We want to show 'maxVisibleWords' ending at or before the current word
         const visibleWords = [];
         
-        for (let i = 0; i < maxVisibleWords; i++) {
-            // Calculate index backwards from current
-            let idx = loopedIndex - i;
-            
-            // Handle wrapping for negative indices (show end of sentence at start)
-            if (idx < 0) {
-                idx = words.length + idx;
-            }
-            
-            // We push to array then reverse later so they draw Left -> Right
-            visibleWords.push({
-                text: words[idx],
-                offset: i // 0 is the newest word, 1 is previous, etc.
-            });
+        // Calculate the start index of our window
+        // We want the current word to be the rightmost (last) in our display
+        let windowStart = clampedIndex - maxVisibleWords + 1;
+        
+        // Ensure we don't go below 0
+        if (windowStart < 0) {
+            windowStart = 0;
         }
-
-        // Reverse so index 0 (newest) is on the right, or left? 
-        // Let's make index 0 the RIGHTMOST word (current), and older words to the left.
-        visibleWords.reverse();
+        
+        // Collect words in the window
+        for (let i = 0; i < maxVisibleWords; i++) {
+            const idx = windowStart + i;
+            
+            // Only add if within bounds
+            if (idx < words.length) {
+                visibleWords.push({
+                    text: words[idx],
+                    offset: i
+                });
+            }
+        }
 
         // 3. Render the Container Line
         renderSingleLineContainer(visibleWords);
@@ -239,32 +241,29 @@
         });
         
         // Add gaps
-        totalWidth += (wordObjects.length - 1) * gap;
+        if (wordObjects.length > 1) {
+            totalWidth += (wordObjects.length - 1) * gap;
+        }
 
         // Starting X position (Centered)
-        let startX = (canvas.width - totalWidth) / 2;
+        let currentX = (canvas.width - totalWidth) / 2;
         const centerY = canvas.height / 2;
 
         // Draw each word
         wordObjects.forEach((obj, index) => {
             const metrics = ctx.measureText(obj.text);
-            const x = startX + (metrics.width / 2); // Center anchor for text
+            
+            // Position: move by half of current word width to center it
+            const x = currentX + (metrics.width / 2);
             
             // Basic styling
             ctx.fillStyle = "#ffffff";
-            
-            // Optional: Fade out older words (simple opacity effect)
-            // The newest word (last in array) is fully opaque, older ones fade
-            const ageFactor = index / wordObjects.length; 
-            ctx.globalAlpha = 0.3 + (0.7 * (1 - ageFactor)); 
-
-            ctx.fillText(obj.text, x, centerY);
-            
-            // Reset alpha
             ctx.globalAlpha = 1.0;
 
-            // Move start position for next word
-            startX += metrics.width + gap;
+            ctx.fillText(obj.text, x, centerY);
+
+            // Move position for next word: add full width + gap
+            currentX += metrics.width + gap;
         });
     }
 
