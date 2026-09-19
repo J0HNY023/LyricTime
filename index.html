@@ -59,7 +59,10 @@
     <!-- Bottom Timestamp Editor (Collapsible) -->
     <div id="timestampEditorContainer" class="bottom-editor collapsed">
       <div class="editor-header" onclick="toggleEditor()">
-        <span class="editor-title">SYNCED WORDS & POSITIONS</span>
+        <div style="display:flex; align-items:center; gap:12px; flex:1;">
+          <span class="editor-title">SYNCED WORDS & POSITIONS</span>
+          <button onclick="downloadTimestamps(); event.stopPropagation();" title="Download timestamps as JSON file" style="background:#0e3a2a; color:#00ffcc; border:1px solid #2a5a3a; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:0.7rem; white-space:nowrap;">⬇ Download</button>
+        </div>
         <button class="toggle-btn" id="editorToggleBtn">▲ Expand</button>
       </div>
       <div class="editor-content">

@@ -72,6 +72,24 @@ window.deselectAllTimestamps = function() {
   if (typeof drawFrameAtCurrentTime === 'function') drawFrameAtCurrentTime();
 };
 
+window.downloadTimestamps = function() {
+  if (!activeWordsData || activeWordsData.length === 0) {
+    alert('No timestamps to export. Please transcribe audio first.');
+    return;
+  }
+  
+  const jsonData = JSON.stringify(activeWordsData, null, 2);
+  const blob = new Blob([jsonData], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'word-timestamps.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
 window.batchShiftTimestamps = function(direction) {
   if (selectedTimestampIndices.length === 0) {
     alert('No words selected. Use the checkboxes to select words first.');
