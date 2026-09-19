@@ -230,6 +230,19 @@ function renderTimestampEditorUI() {
       </div>
     </div>
 
+    <!-- Line Breaks Reference Editor -->
+    <div style="background:#0e0e14; padding:8px; border-radius:4px; border:1px solid #22222a; margin-bottom: 10px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <span style="font-size:0.75rem; color:#00e5ff; font-weight:bold;" title="Define line breaks for word batches. Each line represents a batch of words displayed together.">📝 LINE BREAKS REFERENCE</span>
+        <button onclick="syncLineBreaksToWords()" class="btn-primary" title="Apply line breaks to word positions" style="padding:4px 10px; font-size:0.7rem; background:#00aa88; color:#fff;">Sync to Words</button>
+      </div>
+      <textarea id="lineBreaksEditor" rows="4" placeholder="Enter lyrics with line breaks&#10;Each line defines a batch of words&#10;Example:&#10;Hello world this is line one&#10;This is the second line&#10;And this is line three" style="width:100%; padding:8px; font-size:0.75rem; background:#09090c; border:1px solid #22222a; color:#fff; border-radius:3px; font-family:monospace; resize:vertical;" oninput="saveLineBreaksToStorage()"></textarea>
+      <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:0.65rem; color:#8a8a98;">
+        <span id="lineBreaksStatus">Lines: 0 | Words: 0</span>
+        <button onclick="loadLineBreaksFromWords()" title="Generate line breaks from current word order" style="background:#222230; color:#aaa; border:1px solid #333345; padding:2px 8px; border-radius:3px; cursor:pointer; font-size:0.65rem;">Load from Words</button>
+      </div>
+    </div>
+
     <div class="word-editor-list-below">
   `;
 
@@ -301,6 +314,11 @@ function renderTimestampEditorUI() {
   editorContent.addEventListener('scroll', () => {
     localStorage.setItem('timestamp_editor_scroll_position', editorContent.scrollTop.toString());
   });
+  
+  // Initialize line breaks editor after rendering
+  setTimeout(() => {
+    initLineBreaksEditor();
+  }, 100);
 }
 
 function updateActiveWordHighlight(currentTime) {
@@ -329,4 +347,111 @@ function updateActiveWordHighlight(currentTime) {
       row.classList.add('active');
     }
   }
+}
+
+// --- Line Breaks Reference Editor Functions ---
+
+window.saveLineBreaksToStorage = function() {
+  const textarea = document.getElementById('lineBreaksEditor');
+  if (!textarea) return;
+  
+  const text = textarea.value;
+  localStorage.setItem('lyrics_line_breaks', text);
+  updateLineBreaksStatus();
+};
+
+window.loadLineBreaksFromWords = function() {
+  if (!activeWordsData || activeWordsData.length === 0) {
+    alert('No words available. Please transcribe audio first.');
+    return;
+  }
+  
+  // Generate line breaks from current word order (one word per line as default)
+  const lines = activeWordsData.map(w => w.word.trim()).join('\n');
+  
+  const textarea = document.getElementById('lineBreaksEditor');
+  if (textarea) {
+    textarea.value = lines;
+    saveLineBreaksToStorage();
+  }
+};
+
+window.syncLineBreaksToWords = function() {
+  const textarea = document.getElementById('lineBreaksEditor');
+  if (!textarea || !textarea.value.trim()) {
+    alert('Please enter line breaks in the text area first.');
+    return;
+  }
+  
+  if (!activeWordsData || activeWordsData.length === 0) {
+    alert('No words available. Please transcribe audio first.');
+    return;
+  }
+  
+  // Parse lines from textarea
+  const lines = textarea.value.split('\n').filter(line => line.trim() !== '');
+  
+  // Extract words from each line
+  const lineWordArrays = lines.map(line => line.trim().split(/\s+/).filter(w => w.length > 0));
+  
+  // Flatten to get all words in order
+  const allLineWords = lineWordArrays.flat();
+  
+  // Check if word count matches
+  if (allLineWords.length !== activeWordsData.length) {
+    const confirmMsg = `Warning: Line breaks contain ${allLineWords.length} words, but you have ${activeWordsData.length} timestamped words.\n\nDo you want to proceed anyway? This may cause mismatches.`;
+    if (!confirm(confirmMsg)) {
+      return;
+    }
+  }
+  
+  pushToUndoStack();
+  
+  // Update word data based on line breaks
+  let wordIndex = 0;
+  lineWordArrays.forEach((lineWords, lineIndex) => {
+    lineWords.forEach((lineWord, wordInLineIndex) => {
+      if (wordIndex < activeWordsData.length) {
+        // Update the word text to match the line break definition
+        activeWordsData[wordIndex].word = lineWord;
+        
+        // Mark this word with its line number for batch positioning
+        activeWordsData[wordIndex].lineIndex = lineIndex;
+        
+        wordIndex++;
+      }
+    });
+  });
+  
+  saveState();
+  renderTimestampEditorUI();
+  if (typeof buildWordStructuresFromAudio === 'function') buildWordStructuresFromAudio(activeWordsData);
+  if (typeof drawFrameAtCurrentTime === 'function') drawFrameAtCurrentTime();
+  
+  alert(`Successfully synced ${wordIndex} words to ${lines.length} lines.`);
+};
+
+function updateLineBreaksStatus() {
+  const textarea = document.getElementById('lineBreaksEditor');
+  const statusEl = document.getElementById('lineBreaksStatus');
+  
+  if (!textarea || !statusEl) return;
+  
+  const text = textarea.value;
+  const lines = text.split('\n').filter(line => line.trim() !== '');
+  const words = text.trim().split(/\s+/).filter(w => w.length > 0);
+  
+  statusEl.textContent = `Lines: ${lines.length} | Words: ${text.trim() ? words.length : 0}`;
+}
+
+function initLineBreaksEditor() {
+  // Load saved line breaks from localStorage
+  const savedLineBreaks = localStorage.getItem('lyrics_line_breaks');
+  const textarea = document.getElementById('lineBreaksEditor');
+  
+  if (textarea && savedLineBreaks) {
+    textarea.value = savedLineBreaks;
+  }
+  
+  updateLineBreaksStatus();
 }
