@@ -3,28 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minimal Single Line Text - Styled</title>
-    <link rel="stylesheet" href="css/Lstyle.css">
+    <title>Transcript Line Breaks + Timestamp Modes</title>
     <style>
-        /* Override some layout styles for this minimal version */
         body {
-            background-color: #050505;
-        }
-
-        .main-content {
-            width: 100%;
-        }
-
-        .canvas-area {
+            margin: 0;
             padding: 0;
-        }
-
-        .canvas-viewport {
-            max-width: 100%;
-            border-radius: 0;
-            box-shadow: none;
-            aspect-ratio: auto;
+            background-color: #050505;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             height: 100vh;
+            color: white;
         }
 
         canvas {
@@ -33,657 +24,1179 @@
             top: 0;
             left: 0;
             z-index: 1;
+            touch-action: none;
         }
 
-        /* Simple UI Overlay */
         #ui-layer {
             position: absolute;
             top: 20px;
             left: 20px;
             z-index: 10;
-            background: rgba(18, 18, 22, 0.95);
-            backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.72);
             padding: 15px;
             border-radius: 8px;
-            border: 1px solid #22222a;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        #ui-layer::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        #ui-layer::-webkit-scrollbar-track {
-            background: #0a0a0e;
-            border-radius: 3px;
-        }
-
-        #ui-layer::-webkit-scrollbar-thumb {
-            background: #5a5a6a;
-            border-radius: 3px;
-            border: 2px solid #0a0a0e;
-            box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.3), 0 0 8px rgb(217, 217, 252);
-        }
-
-        #ui-layer::-webkit-scrollbar-thumb:hover {
-            background: #7a7a8a;
-            box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.8), 0 0 12px rgba(0, 229, 255, 0.897);
+            border: 1px solid #333;
+            width: 360px;
+            max-height: calc(100vh - 40px);
+            overflow: auto;
         }
 
         .control-group {
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
 
-        .control-group label {
+        label {
             display: block;
-            font-size: 0.7rem;
-            margin-bottom: 6px;
-            color: #8a8a98;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: #aaa;
+        }
+
+        textarea,
+        input[type="range"],
+        select {
+            width: 100%;
+            background: #222;
+            border: 1px solid #444;
+            color: white;
+            padding: 5px;
+            border-radius: 4px;
+            box-sizing: border-box;
         }
 
         textarea {
-            background: #09090c;
-            border: 1px solid #22222a;
-            color: #fff;
-            padding: 8px;
-            border-radius: 4px;
-            font-family: inherit;
-            outline: none;
-            width: 100%;
-            min-height: 85px;
-            resize: vertical;
-            line-height: 1.5;
-        }
-
-        textarea:focus {
-            border-color: #00e5ff;
-        }
-
-        input[type="range"] {
-            accent-color: #aaaaaa;
-            padding: 0;
-            width: 100%;
-        }
-
-        input[type="text"] {
-            background: #09090c;
-            border: 1px solid #22222a;
-            color: #fff;
-            padding: 8px;
-            border-radius: 4px;
-            font-family: inherit;
-            outline: none;
-            width: 100%;
-        }
-
-        input[type="text"]:focus {
-            border-color: #00e5ff;
+            font-family: monospace;
+            font-size: 11px;
+            line-height: 1.35;
         }
 
         button {
-            background: #e6e6ea;
-            color: #000;
+            background: #444;
+            color: white;
             border: none;
-            padding: 12px;
+            padding: 8px 12px;
             cursor: pointer;
             border-radius: 4px;
             width: 100%;
-            margin-top: 8px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
+            margin-top: 5px;
         }
 
         button:hover {
-            background: #ffffff;
+            background: #666;
         }
 
-        button.secondary {
-            background: #22222a;
-            color: #fff;
-            border: 1px solid #333342;
-        }
-
-        button.secondary:hover {
-            background: #333342;
-        }
-
-        .value-display {
-            font-size: 0.75rem;
-            color: #8a8a98;
-            font-family: monospace;
-            float: right;
-        }
-
-        h2 {
-            border-bottom: 1px solid #22222a;
-            color: #d0d0da;
-            font-size: 1.1rem;
-            letter-spacing: 0.05em;
-            padding-bottom: 8px;
-            padding-left: 8px;
-            text-transform: uppercase;
-            margin: 16px 0 12px 0;
-        }
-
-        .file-upload-group {
-            margin-bottom: 12px;
-        }
-
-        .upload-container {
+        .row {
             display: flex;
+            gap: 8px;
             align-items: center;
-            gap: 10px;
-            margin-top: 8px;
         }
 
-        .custom-file-upload {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 14px;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #e94560;
-            border: 1px solid #0f3460;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            white-space: nowrap;
-        }
-
-        .custom-file-upload:hover {
-            background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
-            border-color: #e94560;
-            box-shadow: 0 4px 12px rgba(233, 69, 96, 0.3);
-            transform: translateY(-1px);
-        }
-
-        .upload-container input[type="file"] {
-            position: absolute;
-            width: 0.1px;
-            height: 0.1px;
-            opacity: 0;
-            overflow: hidden;
-            z-index: -1;
-        }
-
-        .file-name {
-            font-size: 0.75rem;
-            color: #8a8a98;
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+        .row > * {
+            flex: 1;
         }
 
         .time-display {
-            font-size: 0.75rem;
-            font-family: monospace;
-            color: #8a8a98;
-            margin-top: 8px;
-            text-align: center;
+            font-size: 12px;
+            color: #ddd;
+            min-width: 52px;
+            text-align: right;
         }
 
-        .btn-group {
+        .status {
+            font-size: 11px;
+            color: #8cff8c;
+            margin-top: 6px;
+            line-height: 1.35;
+        }
+
+        .hint {
+            font-size: 11px;
+            color: #777;
+            line-height: 1.45;
+            margin-top: 10px;
+        }
+
+        .hint b {
+            color: #bbb;
+        }
+
+        .checkbox-row {
             display: flex;
-            gap: 10px;
+            gap: 6px;
+            align-items: center;
+            font-size: 12px;
+            color: #ccc;
         }
 
-        select {
-            background: #09090c;
-            border: 1px solid #22222a;
-            border-radius: 4px;
-            color: #fff;
-            font-family: inherit;
-            outline: none;
-            padding: 8px;
-            width: 100%;
-        }
-
-        select:focus {
-            border-color: #00e5ff;
+        .checkbox-row input {
+            width: auto;
         }
     </style>
 </head>
 <body>
-    <div class="main-content">
-        <div class="canvas-area">
-            <div class="canvas-viewport">
-                <canvas id="canvas"></canvas>
-            </div>
-        </div>
-    </div>
 
-    <!-- UI Controls -->
     <div id="ui-layer">
-        <h2>Text Input</h2>
         <div class="control-group">
-            <textarea id="textInput" placeholder="Enter or paste your text here...">The quick brown fox jumps over the lazy dog. We are building a single line layout.</textarea>
-        </div>
-        
-        <h2>Display Settings</h2>
-        <div class="control-group">
-            <label>Words Visible <span id="wordCountVal" class="value-display">4</span></label>
-            <input type="range" id="wordCount" min="1" max="10" value="4">
+            <label>Transcript — edit line breaks here</label>
+            <textarea id="transcriptInput" rows="6">I am the one.
+Hide my door.
+Do not blow out the light.
+When your walls are crumbling down to the dust.</textarea>
         </div>
 
         <div class="control-group">
-            <label>Font Size <span id="fontSizeVal" class="value-display">48px</span></label>
-            <input type="range" id="fontSize" min="24" max="120" step="2" value="48">
+            <label>Timestamp JSON — optional</label>
+            <textarea id="timestampInput" rows="10">
+[
+  { "word": "I", "start": 0, "end": 5.72 },
+  { "word": "am", "start": 5.72, "end": 6.44 },
+  { "word": "the", "start": 6.44, "end": 8.14 },
+  { "word": "one.", "start": 8.14, "end": 9.98 },
+  { "word": "Hide", "start": 30, "end": 31.6 },
+  { "word": "my", "start": 31.6, "end": 32 },
+  { "word": "door.", "start": 32, "end": 33.48 },
+  { "word": "Do", "start": 33.48, "end": 36 },
+  { "word": "not", "start": 36, "end": 36.22 },
+  { "word": "blow", "start": 36.22, "end": 36.74 },
+  { "word": "out", "start": 36.74, "end": 37.38 },
+  { "word": "the", "start": 37.38, "end": 37.96 },
+  { "word": "light.", "start": 37.96, "end": 38.94 },
+  { "word": "When", "start": 41.66, "end": 42.32 },
+  { "word": "your", "start": 42.32, "end": 43.06 },
+  { "word": "walls", "start": 43.06, "end": 44.02 },
+  { "word": "are", "start": 44.02, "end": 44.38 },
+  { "word": "crumbling", "start": 44.38, "end": 45.34 },
+  { "word": "down", "start": 45.34, "end": 46.7 },
+  { "word": "to", "start": 46.7, "end": 48.14 },
+  { "word": "the", "start": 48.14, "end": 48.84 },
+  { "word": "dust.", "start": 48.84, "end": 50.5 }
+]
+            </textarea>
+        </div>
+
+        <button id="buildBtn">Build / Rebuild</button>
+        <div class="status" id="status"></div>
+
+        <div class="control-group" style="margin-top:10px;">
+            <label>Display Mode</label>
+            <select id="lineMode">
+                <option value="1">One Line</option>
+                <option value="2" selected>Two Lines</option>
+                <option value="3">Three Lines</option>
+            </select>
         </div>
 
         <div class="control-group">
-            <label>Word Gap <span id="wordGapVal" class="value-display">20px</span></label>
-            <input type="range" id="wordGap" min="0" max="100" step="1" value="20">
+            <label>Display Effect</label>
+            <select id="effectMode">
+                <option value="timestamp_none">Timestamp — instant word appearance</option>
+                <option value="typewriter_word" selected>Typewriter — per word timestamp</option>
+                <option value="typewriter_line">Typewriter — whole line timeline</option>
+            </select>
         </div>
 
         <div class="control-group">
             <label>Font Style</label>
             <select id="fontStyle">
-                <option value='Arial' selected>Arial (Sans-Serif)</option>
-                <option value='Georgia'>Georgia (Serif)</option>
-                <option value='"Courier New", monospace'>Courier New (Monospace)</option>
-                <option value='"Times New Roman", serif'>Times New Roman</option>
-                <option value='Impact'>Impact (Bold)</option>
-                <option value='"Helvetica Neue", sans-serif'>Helvetica</option>
+                <option value="Arial" selected>Arial</option>
+                <option value="Georgia">Georgia</option>
+                <option value="'Courier New', monospace">Courier New</option>
+                <option value="Impact">Impact</option>
+                <option value="'Times New Roman', serif">Times New Roman</option>
+                <option value="Verdana">Verdana</option>
             </select>
         </div>
 
-        <h2>Timing Control</h2>
         <div class="control-group">
-            <label>Speed (ms per word) <span id="speedVal" class="value-display">500 ms</span></label>
-            <input type="range" id="speed" min="100" max="2000" step="50" value="500">
+            <label>Fallback Duration per Line (ms) — used when no timestamps</label>
+            <input type="range" id="durationInput" min="300" max="5000" step="100" value="2000">
+            <span id="durationVal">2000</span> ms
         </div>
 
         <div class="control-group">
-            <label>Current Time <span id="timeVal" class="value-display">0.0s</span></label>
-        </div>
-        <div class="time-display" id="timeDisplay">0:00 / 0:00</div>
-
-        <h2>Audio Sync (Optional)</h2>
-        <div class="file-upload-group">
-            <label for="audioUpload">Upload Audio File</label>
-            <div class="upload-container">
-                <label for="audioUpload" class="custom-file-upload">
-                    <i class="fas fa-cloud-upload-alt"></i> Choose Audio
-                </label>
-                <input type="file" id="audioUpload" accept="audio/*">
-                <span id="audioFileName" class="file-name">No file chosen</span>
+            <label>Playback</label>
+            <button id="playPauseBtn">Pause</button>
+            <div class="row" style="margin-top:6px;">
+                <input type="range" id="timeSlider" min="0" max="0" step="0.01" value="0">
+                <div class="time-display" id="timeDisplay">0.00s</div>
             </div>
         </div>
 
-        <div class="btn-group">
-            <button id="resetBtn" class="secondary">↺ Reset</button>
-            <button id="playPauseBtn">▶ Play</button>
+        <div class="control-group">
+            <div class="checkbox-row">
+                <input type="checkbox" id="holdGaps" checked>
+                <label for="holdGaps" style="margin:0;">Hold page during timestamp gaps</label>
+            </div>
+        </div>
+
+        <button id="restartBtn">Restart</button>
+        <button id="resetTransformsBtn">Reset Word Transforms</button>
+
+        <div class="hint">
+            <b>Click</b> a word to select it.<br>
+            <b>Drag</b> to move it.<br>
+            <b>Alt + Drag</b> to stretch / resize.<br>
+            <b>Alt + Shift + Drag</b> for uniform scale.<br>
+            <b>Alt + Ctrl + Drag</b> to rotate.<br>
+            <b>Double-click</b> a word to reset that word.<br>
+            <b>Click empty space</b> to deselect / resume playback.
         </div>
     </div>
 
-    <script>
-        /**
-         * MINIMAL SINGLE-LINE VERSION WITH APP STYLING
-         * Core logic from minimal-single-line.html
-         * Styles and UI from index.html
-         */
+    <canvas id="canvas"></canvas>
 
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        // UI Elements
-        const textInput = document.getElementById('textInput');
-        const wordCountInput = document.getElementById('wordCount');
-        const wordCountVal = document.getElementById('wordCountVal');
-        const fontSizeInput = document.getElementById('fontSize');
-        const fontSizeVal = document.getElementById('fontSizeVal');
-        const wordGapInput = document.getElementById('wordGap');
-        const wordGapVal = document.getElementById('wordGapVal');
-        const speedInput = document.getElementById('speed');
-        const speedVal = document.getElementById('speedVal');
-        const timeVal = document.getElementById('timeVal');
-        const timeDisplay = document.getElementById('timeDisplay');
-        const fontStyleSelect = document.getElementById('fontStyle');
-        const resetBtn = document.getElementById('resetBtn');
-        const playPauseBtn = document.getElementById('playPauseBtn');
-        const audioUpload = document.getElementById('audioUpload');
-        const audioFileName = document.getElementById('audioFileName');
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
 
-        // State
-        let words = [];
-        let currentTime = 0;
-        let lastFrameTime = 0;
-        let wordDuration = 500; // ms per word
-        let maxVisibleWords = 4;
-        let fontSize = 48;
-        let wordGap = 20;
-        let isPlaying = true;
-        let audioContext = null;
-        let audioBuffer = null;
-        let audioSource = null;
-        let audioStartTime = 0;
-        let audioPausedAt = 0;
+    const transcriptInput = document.getElementById('transcriptInput');
+    const timestampInput = document.getElementById('timestampInput');
+    const buildBtn = document.getElementById('buildBtn');
+    const statusEl = document.getElementById('status');
 
-        // Resize handling
-        function resize() {
-            const rect = canvas.parentElement.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = rect.height;
-        }
-        window.addEventListener('resize', resize);
-        resize();
+    const lineModeSelect = document.getElementById('lineMode');
+    const effectModeSelect = document.getElementById('effectMode');
+    const fontStyleSelect = document.getElementById('fontStyle');
 
-        // Update UI displays
-        wordCountInput.addEventListener('input', (e) => {
-            maxVisibleWords = parseInt(e.target.value);
-            wordCountVal.textContent = maxVisibleWords;
-        });
+    const durationInput = document.getElementById('durationInput');
+    const durationVal = document.getElementById('durationVal');
 
-        fontSizeInput.addEventListener('input', (e) => {
-            fontSize = parseInt(e.target.value);
-            fontSizeVal.textContent = fontSize + 'px';
-        });
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const timeSlider = document.getElementById('timeSlider');
+    const timeDisplay = document.getElementById('timeDisplay');
+    const holdGapsCheckbox = document.getElementById('holdGaps');
 
-        wordGapInput.addEventListener('input', (e) => {
-            wordGap = parseInt(e.target.value);
-            wordGapVal.textContent = wordGap + 'px';
-        });
+    const restartBtn = document.getElementById('restartBtn');
+    const resetTransformsBtn = document.getElementById('resetTransformsBtn');
 
-        speedInput.addEventListener('input', (e) => {
-            wordDuration = parseInt(e.target.value);
-            speedVal.textContent = wordDuration + ' ms';
-        });
+    // State
+    let sourceLines = [];
+    let pages = [];
 
-        fontStyleSelect.addEventListener('change', () => {
-            // Font change will be applied on next draw
-        });
+    let currentTime = 0;
+    let playing = true;
+    let scrubbing = false;
 
-        resetBtn.addEventListener('click', () => {
-            if (audioBuffer) {
-                stopAudio();
-                audioPausedAt = 0;
-            }
-            currentTime = 0;
-            lastFrameTime = performance.now();
-            parseText();
-            updateTimeDisplay();
-        });
+    let totalDuration = 0;
 
-        playPauseBtn.addEventListener('click', togglePlayPause);
+    let lineMode = 2;
+    let effectMode = 'typewriter_word';
+    let fontFamily = 'Arial';
 
-        textInput.addEventListener('input', parseText);
+    let lineDurationMs = 2000;
 
-        // Audio file upload handler
-        audioUpload.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+    // Word transform overrides:
+    // key = word id
+    // value = { dx, dy, scaleX, scaleY, rotation }
+    const overrides = new Map();
 
-            audioFileName.textContent = file.name;
+    let selectedKey = null;
+    let dragging = false;
+    let dragMode = 'move'; // move | resize | rotate
+    let activePointerId = null;
 
-            try {
-                if (!audioContext) {
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    let dragStart = { x: 0, y: 0 };
+    let dragStartOffset = { dx: 0, dy: 0 };
+    let dragStartScale = { scaleX: 1, scaleY: 1 };
+    let dragStartRotation = 0;
+    let dragStartCenter = { x: 0, y: 0 };
+
+    let currentWordBoxes = [];
+
+    let lastFrameTime = performance.now();
+
+    function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    function normalizeOverride(value) {
+        return {
+            dx: value?.dx || 0,
+            dy: value?.dy || 0,
+            scaleX: value?.scaleX ?? 1,
+            scaleY: value?.scaleY ?? 1,
+            rotation: value?.rotation || 0
+        };
+    }
+
+    function getOverride(key) {
+        return normalizeOverride(overrides.get(key));
+    }
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    function updatePlayButton() {
+        playPauseBtn.textContent = playing ? 'Pause' : 'Play';
+    }
+
+    function setStatus(text) {
+        statusEl.textContent = text;
+    }
+
+    function parseTimestampArray(raw) {
+        if (!Array.isArray(raw)) return [];
+
+        return raw
+            .map(item => {
+                const word = String(item.word ?? '').trim();
+                let start = Number(item.start);
+                let end = Number(item.end);
+
+                if (!word || !isFinite(start)) return null;
+
+                if (!isFinite(end) || end <= start) {
+                    end = start + 0.05;
                 }
 
-                const arrayBuffer = await file.arrayBuffer();
-                audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                
-                // Calculate total duration
-                const duration = audioBuffer.duration;
-                const minutes = Math.floor(duration / 60);
-                const seconds = Math.floor(duration % 60);
-                timeDisplay.textContent = `0:00 / ${minutes}:${seconds.toString().padStart(2, '0')}`;
-                
-                console.log('Audio loaded:', file.name, 'Duration:', duration.toFixed(2) + 's');
-            } catch (err) {
-                console.error('Error loading audio:', err);
-                audioFileName.textContent = 'Error loading file';
+                return { word, start, end };
+            })
+            .filter(Boolean)
+            .sort((a, b) => a.start - b.start);
+    }
+
+    function assignTimestampTimings(flatWords, rawTimestamps) {
+        const timestamps = parseTimestampArray(rawTimestamps);
+
+        const timings = flatWords.map((_, index) => {
+            if (index < timestamps.length) {
+                return {
+                    start: timestamps[index].start,
+                    end: timestamps[index].end
+                };
             }
+
+            return null;
         });
 
-        function parseText() {
-            const raw = textInput.value.trim();
-            // Split by whitespace and filter empty strings
-            words = raw.split(/\s+/).filter(w => w.length > 0);
-            
-            // Update total duration estimate
-            if (!audioBuffer) {
-                const totalDuration = (words.length * wordDuration) / 1000;
-                const minutes = Math.floor(totalDuration / 60);
-                const seconds = Math.floor(totalDuration % 60);
-                timeDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')} / ${minutes}:${seconds.toString().padStart(2, '0')}`;
-            }
-        }
+        // Fill missing timings synthetically
+        let lastEnd = 0;
 
-        function togglePlayPause() {
-            if (audioBuffer) {
-                if (isPlaying) {
-                    pauseAudio();
-                } else {
-                    playAudio();
-                }
-            } else {
-                // No audio, just toggle time-based playback
-                isPlaying = !isPlaying;
-                playPauseBtn.textContent = isPlaying ? '⏸ Pause' : '▶ Play';
-                if (isPlaying) {
-                    lastFrameTime = performance.now();
-                }
+        for (let i = 0; i < timings.length; i++) {
+            if (!timings[i]) {
+                const start = lastEnd + 0.1;
+                const end = start + 0.3;
+                timings[i] = { start, end };
             }
+
+            lastEnd = timings[i].end;
         }
 
-        function playAudio() {
-            if (!audioBuffer) return;
-            
-            audioSource = audioContext.createBufferSource();
-            audioSource.buffer = audioBuffer;
-            audioSource.connect(audioContext.destination);
-            
-            const offset = audioPausedAt % audioBuffer.duration;
-            audioSource.start(0, offset);
-            audioStartTime = audioContext.currentTime - offset;
-            
-            audioSource.onended = () => {
-                if (audioContext.currentTime - audioStartTime >= audioBuffer.duration) {
-                    // Audio finished naturally
-                    isPlaying = false;
-                    playPauseBtn.textContent = '▶ Play';
-                    audioPausedAt = 0;
-                }
+        return {
+            timings,
+            assigned: Math.min(flatWords.length, timestamps.length),
+            timestampCount: timestamps.length
+        };
+    }
+
+    function buildSourceLinesSynthetic(rawLines) {
+        const lineDurSec = lineDurationMs / 1000;
+
+        let flatIndex = 0;
+
+        sourceLines = rawLines.map((text, lineIndex) => {
+            const wordStrings = text.split(/\s+/).filter(Boolean);
+
+            const lineStart = lineIndex * lineDurSec;
+            const lineEnd = lineStart + lineDurSec;
+
+            const wordDur = lineDurSec / Math.max(1, wordStrings.length);
+
+            const words = wordStrings.map((wordText, wordIndexInLine) => {
+                const start = lineStart + wordIndexInLine * wordDur;
+                const end = start + wordDur;
+
+                const wordObj = {
+                    id: `word_${flatIndex}`,
+                    text: wordText,
+                    start,
+                    end,
+                    lineId: `line_${lineIndex}`,
+                    wordIndexInLine
+                };
+
+                flatIndex++;
+                return wordObj;
+            });
+
+            return {
+                id: `line_${lineIndex}`,
+                text,
+                words,
+                start: lineStart,
+                end: lineEnd
             };
-            
-            isPlaying = true;
-            playPauseBtn.textContent = '⏸ Pause';
-            lastFrameTime = performance.now();
+        });
+    }
+
+    function buildSourceLinesWithTimestamps(rawLines, rawTimestamps) {
+        const flatWords = rawLines.flatMap(line => line.split(/\s+/).filter(Boolean));
+
+        const { timings, assigned, timestampCount } =
+            assignTimestampTimings(flatWords, rawTimestamps);
+
+        let flatIndex = 0;
+
+        sourceLines = rawLines.map((text, lineIndex) => {
+            const wordStrings = text.split(/\s+/).filter(Boolean);
+
+            const words = wordStrings.map((wordText, wordIndexInLine) => {
+                const timing = timings[flatIndex] || { start: 0, end: 0.01 };
+
+                const wordObj = {
+                    id: `word_${flatIndex}`,
+                    text: wordText,
+                    start: timing.start,
+                    end: timing.end,
+                    lineId: `line_${lineIndex}`,
+                    wordIndexInLine
+                };
+
+                flatIndex++;
+                return wordObj;
+            });
+
+            const lineStart = words.length
+                ? Math.min(...words.map(w => w.start))
+                : 0;
+
+            const lineEnd = words.length
+                ? Math.max(...words.map(w => w.end))
+                : 0;
+
+            return {
+                id: `line_${lineIndex}`,
+                text,
+                words,
+                start: lineStart,
+                end: lineEnd
+            };
+        });
+
+        return { assigned, totalWords: flatWords.length, timestampCount };
+    }
+
+    function buildPages() {
+        pages = [];
+
+        for (let i = 0; i < sourceLines.length; i += lineMode) {
+            const pageLines = sourceLines.slice(i, i + lineMode);
+
+            const start = Math.min(...pageLines.map(l => l.start));
+            const end = Math.max(...pageLines.map(l => l.end));
+
+            pages.push({
+                id: `page_${pages.length}`,
+                lines: pageLines,
+                start,
+                end
+            });
         }
 
-        function pauseAudio() {
-            if (audioSource) {
-                audioSource.stop();
-                audioSource = null;
+        totalDuration = pages.reduce((max, p) => Math.max(max, p.end), 0);
+
+        timeSlider.max = String(totalDuration);
+        timeSlider.value = String(currentTime);
+    }
+
+    function rebuild() {
+        const rawLines = transcriptInput.value
+            .split('\n')
+            .map(l => l.trim())
+            .filter(l => l.length > 0);
+
+        const jsonText = timestampInput.value.trim();
+
+        let parsedTimestamps = null;
+        let jsonValid = false;
+
+        if (jsonText) {
+            try {
+                parsedTimestamps = JSON.parse(jsonText);
+                jsonValid = Array.isArray(parsedTimestamps) && parsedTimestamps.length > 0;
+            } catch (err) {
+                jsonValid = false;
             }
-            
-            if (audioStartTime > 0) {
-                audioPausedAt = audioContext.currentTime - audioStartTime;
+        }
+
+        if (jsonValid) {
+            const info = buildSourceLinesWithTimestamps(rawLines, parsedTimestamps);
+
+            setStatus(
+                `Using timestamps. Assigned ${info.assigned}/${info.totalWords} words. ` +
+                `Timestamp entries: ${info.timestampCount}.`
+            );
+        } else {
+            buildSourceLinesSynthetic(rawLines);
+
+            if (jsonText) {
+                setStatus('Invalid timestamp JSON. Using fallback duration per line.');
+            } else {
+                setStatus('No timestamp JSON. Using fallback duration per line.');
             }
-            
-            isPlaying = false;
-            playPauseBtn.textContent = '▶ Play';
         }
 
-        function stopAudio() {
-            if (audioSource) {
-                audioSource.stop();
-                audioSource = null;
+        buildPages();
+
+        currentTime = 0;
+        selectedKey = null;
+
+        updatePlayButton();
+    }
+
+    function getVisiblePageIndex(time) {
+        if (!pages.length) return -1;
+
+        // Exact active page
+        for (let i = 0; i < pages.length; i++) {
+            const page = pages[i];
+
+            if (time >= page.start && time < page.end) {
+                return i;
             }
-            audioPausedAt = 0;
-            isPlaying = false;
-            playPauseBtn.textContent = '▶ Play';
         }
 
-        function getAudioTime() {
-            if (!audioBuffer || !isPlaying) {
-                return audioPausedAt * 1000; // Return in ms
+        // Exact end boundary
+        for (let i = 0; i < pages.length; i++) {
+            const page = pages[i];
+
+            if (Math.abs(time - page.end) < 0.0001) {
+                return i;
             }
-            return (audioContext.currentTime - audioStartTime) * 1000; // Return in ms
         }
 
-        function updateTimeDisplay() {
-            const currentSeconds = audioBuffer ? (audioPausedAt / 1000) : (currentTime / 1000);
-            const totalSeconds = audioBuffer ? audioBuffer.duration : (words.length * wordDuration / 1000);
-            
-            const curMin = Math.floor(currentSeconds / 60);
-            const curSec = Math.floor(currentSeconds % 60);
-            const totMin = Math.floor(totalSeconds / 60);
-            const totSec = Math.floor(totalSeconds % 60);
-            
-            timeDisplay.textContent = `${curMin}:${curSec.toString().padStart(2, '0')} / ${totMin}:${totSec.toString().padStart(2, '0')}`;
-            timeVal.textContent = currentSeconds.toFixed(1) + 's';
-        }
+        // Hold during gaps
+        if (holdGapsCheckbox.checked) {
+            let lastIndex = -1;
 
-        // Initialize
-        parseText();
-        lastFrameTime = performance.now();
-
-        /**
-         * CORE LOGIC: SINGLE LINE CONTAINER
-         * 
-         * Concept:
-         * 1. Calculate which "slice" of words should be visible based on time.
-         * 2. Draw them in a straight horizontal line at the center.
-         */
-        function draw() {
-            const now = performance.now();
-            const dt = now - lastFrameTime;
-            lastFrameTime = now;
-
-            // Advance time only if playing
-            if (isPlaying) {
-                if (audioBuffer) {
-                    currentTime = getAudioTime();
+            for (let i = 0; i < pages.length; i++) {
+                if (pages[i].start <= time) {
+                    lastIndex = i;
                 } else {
-                    currentTime += dt;
+                    break;
                 }
             }
 
-            // Clear Screen
-            ctx.fillStyle = '#050505';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            if (words.length === 0) {
-                requestAnimationFrame(draw);
-                return;
-            }
-
-            // 1. Determine Current Word Index based on time
-            const totalIndex = Math.floor(currentTime / wordDuration);
-            
-            // Clamp to valid range - NO LOOPING
-            const clampedIndex = Math.min(totalIndex, words.length - 1);
-
-            // 2. Determine the "Window" of words to show
-            const visibleWords = [];
-            
-            // Calculate the start index of our window
-            // We want the current word to be the rightmost (last) in our display
-            let windowStart = clampedIndex - maxVisibleWords + 1;
-            
-            // Ensure we don't go below 0
-            if (windowStart < 0) {
-                windowStart = 0;
-            }
-            
-            // Collect words in the window
-            for (let i = 0; i < maxVisibleWords; i++) {
-                const idx = windowStart + i;
-                
-                // Only add if within bounds
-                if (idx < words.length) {
-                    visibleWords.push({
-                        text: words[idx],
-                        offset: i,
-                        wordIndex: idx
-                    });
-                }
-            }
-
-            // 3. Render the Container Line
-            renderSingleLineContainer(visibleWords);
-
-            // Update time display
-            updateTimeDisplay();
-
-            requestAnimationFrame(draw);
+            return lastIndex;
         }
 
-        function renderSingleLineContainer(wordObjects) {
-            const fontStyle = fontStyleSelect.value;
-            ctx.font = `bold ${fontSize}px ${fontStyle}`;
-            ctx.textBaseline = "middle";
-            ctx.textAlign = "left";
-            
-            // Measure total width to center the whole group
-            let totalWidth = 0;
-            
-            wordObjects.forEach(obj => {
-                const metrics = ctx.measureText(obj.text);
-                totalWidth += metrics.width;
-            });
-            
-            // Add gaps
-            if (wordObjects.length > 1) {
-                totalWidth += (wordObjects.length - 1) * wordGap;
+        return -1;
+    }
+
+    function getPointerPos(e) {
+        const rect = canvas.getBoundingClientRect();
+
+        return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
+    }
+
+    function worldToLocal(px, py, centerX, centerY, rotation) {
+        const dx = px - centerX;
+        const dy = py - centerY;
+
+        const cos = Math.cos(-rotation);
+        const sin = Math.sin(-rotation);
+
+        return {
+            x: centerX + dx * cos - dy * sin,
+            y: centerY + dx * sin + dy * cos
+        };
+    }
+
+    function localToWorld(centerX, centerY, localX, localY, rotation, scaleX = 1, scaleY = 1) {
+        const x = localX * scaleX;
+        const y = localY * scaleY;
+
+        const cos = Math.cos(rotation);
+        const sin = Math.sin(rotation);
+
+        return {
+            x: centerX + x * cos - y * sin,
+            y: centerY + x * sin + y * cos
+        };
+    }
+
+    function hitBox(box, x, y) {
+        const pad = 8;
+
+        const local = worldToLocal(x, y, box.centerX, box.centerY, box.rotation);
+
+        return (
+            local.x >= box.x - pad &&
+            local.x <= box.x + box.width + pad &&
+            local.y >= box.y - pad &&
+            local.y <= box.y + box.height + pad
+        );
+    }
+
+    function findWordAt(x, y) {
+        if (selectedKey) {
+            const selectedBox = currentWordBoxes.find(b => b.key === selectedKey);
+            if (selectedBox && hitBox(selectedBox, x, y)) {
+                return selectedBox;
             }
-
-            // Starting X position (Centered)
-            let currentX = (canvas.width - totalWidth) / 2;
-            const centerY = canvas.height / 2;
-
-            // Get current word index for opacity calculation
-            const totalIndex = Math.floor(currentTime / wordDuration);
-            const currentWordIndex = Math.min(totalIndex, words.length - 1);
-
-            // Draw each word
-            wordObjects.forEach((obj, index) => {
-                const metrics = ctx.measureText(obj.text);
-                
-                // Position: move by half of current word width to center it
-                const x = currentX + (metrics.width / 2);
-                
-                // Calculate opacity based on whether this is the active word
-                let opacity = 1.0;
-                const wordAge = currentTime - (obj.wordIndex * wordDuration);
-                const fadeInDuration = wordDuration * 0.2; // 20% of duration for fade-in
-                
-                if (wordAge < 0) {
-                    opacity = 0;
-                } else if (wordAge <= fadeInDuration) {
-                    opacity = wordAge / fadeInDuration;
-                } else if (index < wordObjects.length - 1) {
-                    // Older words fade out slightly
-                    const fadeOutProgress = Math.min((wordObjects.length - 1 - index) * 0.3, 0.6);
-                    opacity = Math.max(0.4 - fadeOutProgress, 0.2);
-                }
-                
-                // Basic styling
-                ctx.fillStyle = "#ffffff";
-                ctx.globalAlpha = opacity;
-
-                ctx.fillText(obj.text, x, centerY);
-
-                // Move position for next word: add full width + gap
-                currentX += metrics.width + wordGap;
-            });
-            
-            ctx.globalAlpha = 1.0;
         }
 
-        // Start Loop
+        for (let i = currentWordBoxes.length - 1; i >= 0; i--) {
+            const box = currentWordBoxes[i];
+            if (hitBox(box, x, y)) {
+                return box;
+            }
+        }
+
+        return null;
+    }
+
+    function updateCanvasCursor() {
+        if (dragging) {
+            if (dragMode === 'resize') canvas.style.cursor = 'nwse-resize';
+            else if (dragMode === 'rotate') canvas.style.cursor = 'crosshair';
+            else canvas.style.cursor = 'grabbing';
+        } else if (selectedKey) {
+            canvas.style.cursor = 'grab';
+        } else {
+            canvas.style.cursor = 'default';
+        }
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+        const pos = getPointerPos(e);
+        const box = findWordAt(pos.x, pos.y);
+
+        if (box) {
+            selectedKey = box.key;
+            dragging = true;
+            activePointerId = e.pointerId;
+
+            if (e.altKey && e.ctrlKey) {
+                dragMode = 'rotate';
+            } else if (e.altKey) {
+                dragMode = 'resize';
+            } else {
+                dragMode = 'move';
+            }
+
+            dragStart = pos;
+            dragStartCenter = { x: box.centerX, y: box.centerY };
+
+            const existing = getOverride(box.key);
+
+            dragStartOffset = {
+                dx: existing.dx,
+                dy: existing.dy
+            };
+
+            dragStartScale = {
+                scaleX: existing.scaleX,
+                scaleY: existing.scaleY
+            };
+
+            dragStartRotation = existing.rotation;
+
+            if (canvas.setPointerCapture) {
+                canvas.setPointerCapture(e.pointerId);
+            }
+        } else {
+            selectedKey = null;
+            dragging = false;
+            activePointerId = null;
+            dragMode = 'move';
+        }
+
+        updateCanvasCursor();
+    });
+
+    window.addEventListener('pointermove', (e) => {
+        if (!dragging || e.pointerId !== activePointerId || !selectedKey) return;
+
+        const pos = getPointerPos(e);
+        const existing = getOverride(selectedKey);
+
+        if (dragMode === 'rotate') {
+            const dx = pos.x - dragStartCenter.x;
+            const dy = pos.y - dragStartCenter.y;
+
+            const angle = Math.atan2(dy, dx);
+
+            const startDx = dragStart.x - dragStartCenter.x;
+            const startDy = dragStart.y - dragStartCenter.y;
+            const startAngle = Math.atan2(startDy, startDx);
+
+            let rotation = dragStartRotation + (angle - startAngle);
+
+            // Snap to 15 degrees if Shift is also held
+            if (e.shiftKey) {
+                const snap = Math.PI / 12;
+                rotation = Math.round(rotation / snap) * snap;
+            }
+
+            overrides.set(selectedKey, {
+                ...existing,
+                rotation
+            });
+        } else if (dragMode === 'resize') {
+            const dx = pos.x - dragStart.x;
+            const dy = pos.y - dragStart.y;
+
+            let nextScaleX = existing.scaleX;
+            let nextScaleY = existing.scaleY;
+
+            if (e.shiftKey) {
+                const factor = clamp(1 + (dx + dy) / 250, 0.1, 20);
+                nextScaleX = clamp(dragStartScale.scaleX * factor, 0.2, 10);
+                nextScaleY = clamp(dragStartScale.scaleY * factor, 0.2, 10);
+            } else {
+                nextScaleX = clamp(dragStartScale.scaleX + dx / 250, 0.2, 10);
+                nextScaleY = clamp(dragStartScale.scaleY + dy / 250, 0.2, 10);
+            }
+
+            overrides.set(selectedKey, {
+                ...existing,
+                scaleX: nextScaleX,
+                scaleY: nextScaleY
+            });
+        } else {
+            overrides.set(selectedKey, {
+                ...existing,
+                dx: dragStartOffset.dx + (pos.x - dragStart.x),
+                dy: dragStartOffset.dy + (pos.y - dragStart.y)
+            });
+        }
+    });
+
+    function endPointerDrag(e) {
+        if (e.pointerId === activePointerId) {
+            dragging = false;
+            activePointerId = null;
+            dragMode = 'move';
+            updateCanvasCursor();
+        }
+    }
+
+    window.addEventListener('pointerup', endPointerDrag);
+    window.addEventListener('pointercancel', endPointerDrag);
+
+    canvas.addEventListener('dblclick', (e) => {
+        const pos = getPointerPos(e);
+        const box = findWordAt(pos.x, pos.y);
+
+        if (box) {
+            overrides.delete(box.key);
+
+            if (selectedKey === box.key) {
+                selectedKey = null;
+            }
+        }
+    });
+
+    function drawWordTransformed(text, centerX, centerY, baseWidth, scaleX, scaleY, rotation) {
+        if (!text) return;
+
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(rotation);
+        ctx.scale(scaleX, scaleY);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = 1;
+        ctx.fillText(text, -baseWidth / 2, 0);
+
+        ctx.restore();
+    }
+
+    function renderPage(page) {
+        currentWordBoxes = [];
+
+        if (!page || !page.lines.length) {
+            if (selectedKey && !dragging) {
+                selectedKey = null;
+            }
+            return;
+        }
+
+        const baseGap = 20;
+
+        const buildLayout = (fontSize) => {
+            ctx.font = `bold ${fontSize}px ${fontFamily}`;
+
+            const layouts = page.lines.map(line => {
+                const words = line.words.map(wordObj => {
+                    return {
+                        wordObj,
+                        width: ctx.measureText(wordObj.text).width
+                    };
+                });
+
+                const lineWidth =
+                    words.reduce((sum, w) => sum + w.width, 0) +
+                    Math.max(0, words.length - 1) * baseGap;
+
+                return {
+                    line,
+                    words,
+                    lineWidth
+                };
+            });
+
+            const maxLineWidth = layouts.reduce((max, l) => Math.max(max, l.lineWidth), 1);
+
+            return {
+                layouts,
+                maxLineWidth
+            };
+        };
+
+        let fontSize = 48;
+        let layout = buildLayout(fontSize);
+
+        const maxAllowedWidth = Math.max(100, canvas.width * 0.90);
+        const maxAllowedHeight = Math.max(100, canvas.height * 0.80);
+
+        const estimatedHeight = fontSize * 1.5 * page.lines.length;
+
+        let scale = 1;
+
+        if (layout.maxLineWidth > maxAllowedWidth) {
+            scale = Math.min(scale, maxAllowedWidth / layout.maxLineWidth);
+        }
+
+        if (estimatedHeight > maxAllowedHeight) {
+            scale = Math.min(scale, maxAllowedHeight / estimatedHeight);
+        }
+
+        if (scale < 1) {
+            fontSize = Math.max(16, Math.floor(fontSize * scale));
+            layout = buildLayout(fontSize);
+        }
+
+        ctx.font = `bold ${fontSize}px ${fontFamily}`;
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'left';
+
+        const lineHeight = fontSize * 1.5;
+        const totalHeight = lineHeight * page.lines.length;
+
+        const startY = canvas.height / 2 - totalHeight / 2 + lineHeight / 2;
+
+        let cursor = null;
+        let selectedDraw = null;
+
+        layout.layouts.forEach((lineLayout, lineIndex) => {
+            const y = startY + lineIndex * lineHeight;
+
+            let currentX = (canvas.width - lineLayout.lineWidth) / 2;
+
+            let totalChars = 0;
+            let globalCharsToShow = 0;
+            let charsConsumed = 0;
+
+            if (effectMode === 'typewriter_line') {
+                totalChars =
+                    lineLayout.line.words.reduce((sum, w) => sum + w.text.length, 0) +
+                    Math.max(0, lineLayout.line.words.length - 1);
+
+                const lineDuration = Math.max(0.001, lineLayout.line.end - lineLayout.line.start);
+                const lineProgress = clamp((currentTime - lineLayout.line.start) / lineDuration, 0, 1);
+
+                globalCharsToShow = Math.ceil(lineProgress * totalChars);
+            }
+
+            lineLayout.words.forEach((item, wordIndex) => {
+                const wordObj = item.wordObj;
+                const key = wordObj.id;
+
+                const transform = getOverride(key);
+
+                const finalLeft = currentX + transform.dx;
+                const finalCenterY = y + transform.dy;
+
+                const centerX = finalLeft + item.width / 2;
+
+                const scaledWidth = item.width * transform.scaleX;
+                const scaledHeight = fontSize * 1.15 * transform.scaleY;
+
+                const box = {
+                    key,
+                    x: centerX - scaledWidth / 2,
+                    y: finalCenterY - scaledHeight / 2,
+                    width: scaledWidth,
+                    height: scaledHeight,
+                    centerX,
+                    centerY: finalCenterY,
+                    rotation: transform.rotation
+                };
+
+                currentWordBoxes.push(box);
+
+                let textToDraw = '';
+
+                if (effectMode === 'timestamp_none') {
+                    if (currentTime >= wordObj.start) {
+                        textToDraw = wordObj.text;
+                    }
+                }
+
+                else if (effectMode === 'typewriter_word') {
+                    const duration = Math.max(0.001, wordObj.end - wordObj.start);
+                    const wordProgress = clamp((currentTime - wordObj.start) / duration, 0, 1);
+
+                    const charsToShow = Math.ceil(wordProgress * wordObj.text.length);
+                    textToDraw = wordObj.text.substring(0, charsToShow);
+
+                    if (wordProgress > 0 && wordProgress < 1) {
+                        const partialWidth = ctx.measureText(textToDraw).width;
+
+                        const localX = -item.width / 2 + partialWidth;
+                        const world = localToWorld(
+                            centerX,
+                            finalCenterY,
+                            localX,
+                            0,
+                            transform.rotation,
+                            transform.scaleX,
+                            transform.scaleY
+                        );
+
+                        cursor = {
+                            x: world.x,
+                            y: world.y
+                        };
+                    }
+                }
+
+                else if (effectMode === 'typewriter_line') {
+                    const available = globalCharsToShow - charsConsumed;
+                    const charsForWord = Math.max(0, Math.min(wordObj.text.length, available));
+
+                    textToDraw = wordObj.text.substring(0, charsForWord);
+
+                    if (charsForWord > 0 && charsForWord < wordObj.text.length) {
+                        const partialWidth = ctx.measureText(textToDraw).width;
+
+                        const localX = -item.width / 2 + partialWidth;
+                        const world = localToWorld(
+                            centerX,
+                            finalCenterY,
+                            localX,
+                            0,
+                            transform.rotation,
+                            transform.scaleX,
+                            transform.scaleY
+                        );
+
+                        cursor = {
+                            x: world.x,
+                            y: world.y
+                        };
+                    } else if (
+                        charsForWord === wordObj.text.length &&
+                        wordIndex < lineLayout.words.length - 1 &&
+                        available === wordObj.text.length + 1
+                    ) {
+                        const world = localToWorld(
+                            centerX,
+                            finalCenterY,
+                            item.width / 2 + baseGap / 2,
+                            0,
+                            transform.rotation,
+                            transform.scaleX,
+                            1
+                        );
+
+                        cursor = {
+                            x: world.x,
+                            y: world.y
+                        };
+                    }
+
+                    charsConsumed += wordObj.text.length;
+
+                    if (wordIndex < lineLayout.words.length - 1) {
+                        charsConsumed += 1; // virtual space
+                    }
+                }
+
+                const isSelected = key === selectedKey;
+
+                if (isSelected) {
+                    selectedDraw = {
+                        textToDraw,
+                        centerX,
+                        centerY: finalCenterY,
+                        baseWidth: item.width,
+                        scaleX: transform.scaleX,
+                        scaleY: transform.scaleY,
+                        rotation: transform.rotation,
+                        box
+                    };
+                } else {
+                    drawWordTransformed(
+                        textToDraw,
+                        centerX,
+                        finalCenterY,
+                        item.width,
+                        transform.scaleX,
+                        transform.scaleY,
+                        transform.rotation
+                    );
+                }
+
+                currentX += item.width + baseGap;
+            });
+        });
+
+        // Draw selected word on top with rotated border
+        if (selectedDraw) {
+            drawWordTransformed(
+                selectedDraw.textToDraw,
+                selectedDraw.centerX,
+                selectedDraw.centerY,
+                selectedDraw.baseWidth,
+                selectedDraw.scaleX,
+                selectedDraw.scaleY,
+                selectedDraw.rotation
+            );
+
+            const b = selectedDraw.box;
+            const pad = Math.max(3, fontSize * 0.08);
+
+            ctx.save();
+            ctx.translate(b.centerX, b.centerY);
+            ctx.rotate(b.rotation);
+
+            ctx.strokeStyle = '#00d1ff';
+            ctx.lineWidth = Math.max(2, fontSize / 18);
+
+            ctx.strokeRect(
+                -b.width / 2 - pad,
+                -b.height / 2 - pad,
+                b.width + pad * 2,
+                b.height + pad * 2
+            );
+
+            ctx.restore();
+        } else if (selectedKey && !dragging) {
+            selectedKey = null;
+        }
+
+        // Cursor
+        if (cursor) {
+            const blink = Math.floor(performance.now() / 400) % 2 === 0;
+
+            if (blink) {
+                ctx.fillStyle = '#ffffff';
+
+                const cursorHeight = fontSize * 0.9;
+
+                ctx.fillRect(
+                    cursor.x + 2,
+                    cursor.y - cursorHeight / 2,
+                    Math.max(2, fontSize / 12),
+                    cursorHeight
+                );
+            }
+        }
+
+        updateCanvasCursor();
+    }
+
+    function draw() {
+        const now = performance.now();
+        const dt = (now - lastFrameTime) / 1000;
+        lastFrameTime = now;
+
+        if (playing && !selectedKey && !scrubbing) {
+            currentTime += dt;
+        }
+
+        if (totalDuration > 0 && currentTime > totalDuration + 2) {
+            currentTime = 0;
+        }
+
+        if (!scrubbing) {
+            timeSlider.value = String(currentTime);
+        }
+
+        timeDisplay.textContent = currentTime.toFixed(2) + 's';
+
+        ctx.fillStyle = '#050505';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const visiblePageIndex = getVisiblePageIndex(currentTime);
+        const visiblePage = visiblePageIndex >= 0 ? pages[visiblePageIndex] : null;
+
+        renderPage(visiblePage);
+
         requestAnimationFrame(draw);
-    </script>
+    }
+
+    // UI Events
+    buildBtn.addEventListener('click', rebuild);
+
+    transcriptInput.addEventListener('change', rebuild);
+    timestampInput.addEventListener('change', rebuild);
+
+    lineModeSelect.addEventListener('change', (e) => {
+        lineMode = parseInt(e.target.value, 10);
+        buildPages();
+
+        currentTime = 0;
+        selectedKey = null;
+    });
+
+    effectModeSelect.addEventListener('change', (e) => {
+        effectMode = e.target.value;
+    });
+
+    fontStyleSelect.addEventListener('change', (e) => {
+        fontFamily = e.target.value;
+    });
+
+    durationInput.addEventListener('input', (e) => {
+        lineDurationMs = parseInt(e.target.value, 10);
+        durationVal.textContent = lineDurationMs;
+
+        rebuild();
+    });
+
+    playPauseBtn.addEventListener('click', () => {
+        playing = !playing;
+        updatePlayButton();
+    });
+
+    timeSlider.addEventListener('pointerdown', () => {
+        scrubbing = true;
+    });
+
+    window.addEventListener('pointerup', () => {
+        scrubbing = false;
+    });
+
+    timeSlider.addEventListener('input', () => {
+        currentTime = parseFloat(timeSlider.value) || 0;
+    });
+
+    restartBtn.addEventListener('click', () => {
+        currentTime = 0;
+        playing = true;
+        selectedKey = null;
+        updatePlayButton();
+    });
+
+    resetTransformsBtn.addEventListener('click', () => {
+        overrides.clear();
+        selectedKey = null;
+    });
+
+    // Initialize
+    rebuild();
+    requestAnimationFrame(draw);
+</script>
 </body>
 </html>
