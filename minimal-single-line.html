@@ -230,6 +230,7 @@
     function renderSingleLineContainer(wordObjects) {
         ctx.font = "bold 48px Arial";
         ctx.textBaseline = "middle";
+        ctx.textAlign = "left"; // Explicitly set left alignment to fix overlap issues
         
         // Measure total width to center the whole group
         let totalWidth = 0;
