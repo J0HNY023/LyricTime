@@ -3,6 +3,9 @@
    Loaded FIRST. Every other script relies on the globals declared here.
    ========================================================================== */
 
+// --- Global Canvas References ---
+let canvas, ctx;
+
 // --- Sidebar / Text Input Controls ---
 const autoAlignInput = document.getElementById('autoAlign');
 const capitalizeTextInput = document.getElementById('capitalizeText');
@@ -14,8 +17,8 @@ const loopBtn = document.getElementById('loopBtn');
 
 // --- Effect / Canvas ---
 const textEffectInput = document.getElementById('textEffect');
-const canvas = document.getElementById('animCanvas');
-const ctx = canvas.getContext('2d');
+canvas = document.getElementById('animCanvas');
+ctx = canvas.getContext('2d');
 
 // --- Text Input ---
 const textInput = document.getElementById('textInput');

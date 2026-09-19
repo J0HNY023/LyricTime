@@ -457,107 +457,113 @@ function renderFocusedCenter(elapsed, fontSize, fontStyle, tracking, driftSpeed)
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
 }
-
-// --- Single-Line Layout Render Function ---
+// --- Single-Line Layout Render Function (Timestamp-Based) ---
+// Uses Grok/WhisperX timestamps for word timing, displays a sliding window of words
 function renderSingleLine(elapsed, fontSize, fontStyle, tracking, driftSpeed) {
   if (wordObjects.length === 0) return;
 
-  const activeTime = elapsed;
+  const activeTime = elapsed * 1000; // Convert to ms for timestamp comparison
   const maxWords = parseInt(maxWordsDisplayInput ? maxWordsDisplayInput.value : 4, 10);
-  
-  // Find the current word index based on time
+
+  // Find the current word index based on audio timestamps
   let currentWordIndex = -1;
   for (let i = 0; i < wordObjects.length; i++) {
-    if (activeTime >= wordObjects[i].startTime && activeTime <= wordObjects[i].startTime + wordObjects[i].duration) {
+    const wordStart = wordObjects[i].startTime * 1000;
+    const wordEnd = (wordObjects[i].startTime + wordObjects[i].duration) * 1000;
+    if (activeTime >= wordStart && activeTime < wordEnd) {
       currentWordIndex = i;
       break;
     }
   }
-  
+
+  // If no word is active, check if we're past all words (show last word) or before all (show first)
   if (currentWordIndex === -1) {
-    // No word is currently active, check if we should show the next word fading in
-    // or keep showing the last word fading out
-    return;
-  }
-
-  const lineHeight = fontSize * 2.5;
-  const centerY = canvas.height / 2;
-  const centerX = canvas.width / 2;
-
-  ctx.font = `${fontSize}px ${fontStyle}`;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-
-  // Calculate which words to display (centered around current word)
-  const wordsToShow = [];
-  const startIdx = Math.max(0, currentWordIndex - Math.floor((maxWords - 1) / 2));
-  const endIdx = Math.min(wordObjects.length, startIdx + maxWords);
-  
-  // Adjust start if we're near the end
-  const actualStart = Math.max(0, endIdx - maxWords);
-  
-  for (let i = actualStart; i < endIdx; i++) {
-    wordsToShow.push(wordObjects[i]);
-  }
-
-  // Calculate total width to center the line
-  const wordGap = parseFloat(centerXOffsetInput.value) || 0;
-  let totalWidth = 0;
-  
-  wordsToShow.forEach((w, idx) => {
-    const wWidth = ctx.measureText(w.text).width;
-    totalWidth += wWidth + tracking;
-    if (idx < wordsToShow.length - 1) {
-      totalWidth += wordGap;
+    if (activeTime > wordObjects[wordObjects.length - 1].startTime * 1000) {
+      currentWordIndex = wordObjects.length - 1;
+    } else {
+      return; // Before first word, don't render anything
     }
+  }
+
+  ctx.font = `bold ${fontSize}px ${fontStyle}`;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "left";
+
+  // Calculate the "Window" of words to show
+  // We want to show 'maxVisibleWords' ending at or near the current word
+  const visibleWords = [];
+  
+  // Calculate the start index of our window
+  // Position the current word as the rightmost (last) in our display when possible
+  let windowStart = currentWordIndex - maxWords + 1;
+  
+  // Ensure we don't go below 0
+  if (windowStart < 0) {
+    windowStart = 0;
+  }
+
+  // Collect words in the window
+  for (let i = 0; i < maxWords; i++) {
+    const idx = windowStart + i;
+    if (idx < wordObjects.length) {
+      visibleWords.push(wordObjects[idx]);
+    }
+  }
+
+  // Measure total width to center the whole group
+  const gap = 20; // Space between words
+  let totalWidth = 0;
+
+  visibleWords.forEach(obj => {
+    const metrics = ctx.measureText(obj.text);
+    totalWidth += metrics.width;
   });
 
-  let startX = centerX - (totalWidth / 2);
-  const lineY = centerY;
+  // Add gaps between words
+  if (visibleWords.length > 1) {
+    totalWidth += (visibleWords.length - 1) * gap;
+  }
 
-  wordsToShow.forEach((w, idx) => {
-    const wWidth = ctx.measureText(w.text).width;
+  // Starting X position (Centered horizontally)
+  let currentX = (canvas.width - totalWidth) / 2;
+  const centerY = canvas.height / 2;
 
-    // Target position for this word
-    w.targetX = startX;
-    w.targetY = lineY;
-
-    // Initialize anim positions if they don't exist
-    if (w.animX === undefined) { w.animX = w.x; w.animY = w.y; }
-
-    // Smoothly interpolate towards the target
-    w.animX = lerp(w.animX, w.targetX, LAYOUT_EASE);
-    w.animY = lerp(w.animY, w.targetY, LAYOUT_EASE);
-
+  // Draw each word
+  visibleWords.forEach((obj, index) => {
+    const metrics = ctx.measureText(obj.text);
+    
+    // Position: move by half of current word width to center it at currentX
+    const x = currentX + (metrics.width / 2);
+    
     // Calculate opacity based on whether this is the active word
     let opacity = 1.0;
-    const wordElapsed = activeTime - w.startTime;
-    const fadeInDuration = w.duration * 0.3;
-    const fadeOutDelay = parseFloat(fadeOutDelayInput ? fadeOutDelayInput.value : 0);
+    const wordElapsed = activeTime - (obj.startTime * 1000);
+    const fadeInDuration = (obj.duration * 1000) * 0.2; // 20% of duration for fade-in
     
     if (wordElapsed < 0) {
       opacity = 0;
     } else if (wordElapsed <= fadeInDuration) {
       opacity = wordElapsed / fadeInDuration;
-    } else if (wordElapsed > fadeInDuration + fadeOutDelay) {
-      const fadeOutProgress = (wordElapsed - fadeInDuration - fadeOutDelay) / (w.duration - fadeInDuration - fadeOutDelay);
-      opacity = Math.max(1 - fadeOutProgress, 0);
+    } else if (index < visibleWords.length - 1) {
+      // Older words fade out slightly
+      const fadeOutProgress = Math.min((visibleWords.length - 1 - index) * 0.3, 0.6);
+      opacity = Math.max(0.4 - fadeOutProgress, 0.2);
     }
 
-    // Pass the animated position to renderWord
-    renderWord(w, elapsed, fontSize, fontStyle, tracking, driftSpeed, w.animX, w.animY, opacity);
-
-    // Move startX for next word
-    startX += wWidth + tracking;
-    if (idx < wordsToShow.length - 1) {
-      startX += wordGap;
-    }
+    // Basic styling
+    ctx.fillStyle = "#ffffff";
+    ctx.globalAlpha = opacity;
+    
+    ctx.fillText(obj.text, x, centerY);
+    
+    // Move position for next word: add full width + gap
+    currentX += metrics.width + gap;
   });
 
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'alphabetic';
+  ctx.globalAlpha = 1.0;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
 }
-
 // --- Single-Line Settings Visibility Toggle ---
 const singleLineSettings = document.getElementById('singleLineSettings');
 const maxWordsDisplayInput = document.getElementById('maxWordsDisplay');

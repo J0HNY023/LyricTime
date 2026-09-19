@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minimal Single Line Text</title>
+    <title>Transcript Line Breaks + Timestamp Modes</title>
     <style>
         body {
             margin: 0;
             padding: 0;
             background-color: #050505;
             overflow: hidden;
-            font-family: 'Arial', sans-serif;
+            font-family: Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -24,18 +24,21 @@
             top: 0;
             left: 0;
             z-index: 1;
+            touch-action: none;
         }
 
-        /* Simple UI Overlay */
         #ui-layer {
             position: absolute;
             top: 20px;
             left: 20px;
             z-index: 10;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.72);
             padding: 15px;
             border-radius: 8px;
             border: 1px solid #333;
+            width: 360px;
+            max-height: calc(100vh - 40px);
+            overflow: auto;
         }
 
         .control-group {
@@ -49,15 +52,24 @@
             color: #aaa;
         }
 
-        textarea, input[type="range"], select {
+        textarea,
+        input[type="range"],
+        select {
             width: 100%;
             background: #222;
             border: 1px solid #444;
             color: white;
             padding: 5px;
             border-radius: 4px;
+            box-sizing: border-box;
         }
-        
+
+        textarea {
+            font-family: monospace;
+            font-size: 11px;
+            line-height: 1.35;
+        }
+
         button {
             background: #444;
             color: white;
@@ -72,62 +84,245 @@
         button:hover {
             background: #666;
         }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .row > * {
+            flex: 1;
+        }
+
+        .time-display {
+            font-size: 12px;
+            color: #ddd;
+            min-width: 52px;
+            text-align: right;
+        }
+
+        .status {
+            font-size: 11px;
+            color: #8cff8c;
+            margin-top: 6px;
+            line-height: 1.35;
+        }
+
+        .hint {
+            font-size: 11px;
+            color: #777;
+            line-height: 1.45;
+            margin-top: 10px;
+        }
+
+        .hint b {
+            color: #bbb;
+        }
+
+        .checkbox-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        .checkbox-row input {
+            width: auto;
+        }
     </style>
 </head>
 <body>
 
-    <!-- UI Controls -->
     <div id="ui-layer">
         <div class="control-group">
-            <label>Text Input</label>
-            <textarea id="textInput" rows="4">The quick brown fox jumps over the lazy dog. We are building a single line layout.</textarea>
-        </div>
-        
-        <div class="control-group">
-            <label>Words Visible (Max)</label>
-            <input type="range" id="wordCount" min="1" max="10" value="4">
-            <span id="wordCountVal">4</span>
+            <label>Transcript — edit line breaks here</label>
+            <textarea id="transcriptInput" rows="6">I am the one.
+Hide my door.
+Do not blow out the light.
+When your walls are crumbling down to the dust.</textarea>
         </div>
 
         <div class="control-group">
-            <label>Speed (ms per word)</label>
-            <input type="range" id="speed" min="100" max="2000" step="50" value="500">
-            <span id="speedVal">500</span> ms
+            <label>Timestamp JSON — optional</label>
+            <textarea id="timestampInput" rows="10">
+[
+  { "word": "I", "start": 0, "end": 5.72 },
+  { "word": "am", "start": 5.72, "end": 6.44 },
+  { "word": "the", "start": 6.44, "end": 8.14 },
+  { "word": "one.", "start": 8.14, "end": 9.98 },
+  { "word": "Hide", "start": 30, "end": 31.6 },
+  { "word": "my", "start": 31.6, "end": 32 },
+  { "word": "door.", "start": 32, "end": 33.48 },
+  { "word": "Do", "start": 33.48, "end": 36 },
+  { "word": "not", "start": 36, "end": 36.22 },
+  { "word": "blow", "start": 36.22, "end": 36.74 },
+  { "word": "out", "start": 36.74, "end": 37.38 },
+  { "word": "the", "start": 37.38, "end": 37.96 },
+  { "word": "light.", "start": 37.96, "end": 38.94 },
+  { "word": "When", "start": 41.66, "end": 42.32 },
+  { "word": "your", "start": 42.32, "end": 43.06 },
+  { "word": "walls", "start": 43.06, "end": 44.02 },
+  { "word": "are", "start": 44.02, "end": 44.38 },
+  { "word": "crumbling", "start": 44.38, "end": 45.34 },
+  { "word": "down", "start": 45.34, "end": 46.7 },
+  { "word": "to", "start": 46.7, "end": 48.14 },
+  { "word": "the", "start": 48.14, "end": 48.84 },
+  { "word": "dust.", "start": 48.84, "end": 50.5 }
+]
+            </textarea>
         </div>
 
-        <button id="resetBtn">Reset / Restart</button>
+        <button id="buildBtn">Build / Rebuild</button>
+        <div class="status" id="status"></div>
+
+        <div class="control-group" style="margin-top:10px;">
+            <label>Display Mode</label>
+            <select id="lineMode">
+                <option value="1">One Line</option>
+                <option value="2" selected>Two Lines</option>
+                <option value="3">Three Lines</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>Display Effect</label>
+            <select id="effectMode">
+                <option value="timestamp_none">Timestamp — instant word appearance</option>
+                <option value="typewriter_word" selected>Typewriter — per word timestamp</option>
+                <option value="typewriter_line">Typewriter — whole line timeline</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>Font Style</label>
+            <select id="fontStyle">
+                <option value="Arial" selected>Arial</option>
+                <option value="Georgia">Georgia</option>
+                <option value="'Courier New', monospace">Courier New</option>
+                <option value="Impact">Impact</option>
+                <option value="'Times New Roman', serif">Times New Roman</option>
+                <option value="Verdana">Verdana</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>Fallback Duration per Line (ms) — used when no timestamps</label>
+            <input type="range" id="durationInput" min="300" max="5000" step="100" value="2000">
+            <span id="durationVal">2000</span> ms
+        </div>
+
+        <div class="control-group">
+            <label>Playback</label>
+            <button id="playPauseBtn">Pause</button>
+            <div class="row" style="margin-top:6px;">
+                <input type="range" id="timeSlider" min="0" max="0" step="0.01" value="0">
+                <div class="time-display" id="timeDisplay">0.00s</div>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <div class="checkbox-row">
+                <input type="checkbox" id="holdGaps" checked>
+                <label for="holdGaps" style="margin:0;">Hold page during timestamp gaps</label>
+            </div>
+        </div>
+
+        <button id="restartBtn">Restart</button>
+        <button id="resetTransformsBtn">Reset Word Transforms</button>
+
+        <div class="hint">
+            <b>Click</b> a word to select it.<br>
+            <b>Drag</b> to move it.<br>
+            <b>Alt + Drag</b> to stretch / resize.<br>
+            <b>Alt + Shift + Drag</b> for uniform scale.<br>
+            <b>Alt + Ctrl + Drag</b> to rotate.<br>
+            <b>Double-click</b> a word to reset that word.<br>
+            <b>Click empty space</b> to deselect / resume playback.
+        </div>
     </div>
 
     <canvas id="canvas"></canvas>
 
 <script>
-    /**
-     * MINIMAL RESET VERSION
-     * - No complex effects
-     * - No audio sync
-     * - No multiple layout modes
-     * - Just: Single Line Logic
-     */
-
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    
-    // UI Elements
-    const textInput = document.getElementById('textInput');
-    const wordCountInput = document.getElementById('wordCount');
-    const wordCountVal = document.getElementById('wordCountVal');
-    const speedInput = document.getElementById('speed');
-    const speedVal = document.getElementById('speedVal');
-    const resetBtn = document.getElementById('resetBtn');
+
+    const transcriptInput = document.getElementById('transcriptInput');
+    const timestampInput = document.getElementById('timestampInput');
+    const buildBtn = document.getElementById('buildBtn');
+    const statusEl = document.getElementById('status');
+
+    const lineModeSelect = document.getElementById('lineMode');
+    const effectModeSelect = document.getElementById('effectMode');
+    const fontStyleSelect = document.getElementById('fontStyle');
+
+    const durationInput = document.getElementById('durationInput');
+    const durationVal = document.getElementById('durationVal');
+
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const timeSlider = document.getElementById('timeSlider');
+    const timeDisplay = document.getElementById('timeDisplay');
+    const holdGapsCheckbox = document.getElementById('holdGaps');
+
+    const restartBtn = document.getElementById('restartBtn');
+    const resetTransformsBtn = document.getElementById('resetTransformsBtn');
 
     // State
-    let words = [];
+    let sourceLines = [];
+    let pages = [];
+
     let currentTime = 0;
-    let lastFrameTime = 0;
-    let wordDuration = 500; // ms per word
-    let maxVisibleWords = 4;
-    
-    // Resize handling
+    let playing = true;
+    let scrubbing = false;
+
+    let totalDuration = 0;
+
+    let lineMode = 2;
+    let effectMode = 'typewriter_word';
+    let fontFamily = 'Arial';
+
+    let lineDurationMs = 2000;
+
+    // Word transform overrides:
+    // key = word id
+    // value = { dx, dy, scaleX, scaleY, rotation }
+    const overrides = new Map();
+
+    let selectedKey = null;
+    let dragging = false;
+    let dragMode = 'move'; // move | resize | rotate
+    let activePointerId = null;
+
+    let dragStart = { x: 0, y: 0 };
+    let dragStartOffset = { dx: 0, dy: 0 };
+    let dragStartScale = { scaleX: 1, scaleY: 1 };
+    let dragStartRotation = 0;
+    let dragStartCenter = { x: 0, y: 0 };
+
+    let currentWordBoxes = [];
+
+    let lastFrameTime = performance.now();
+
+    function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    function normalizeOverride(value) {
+        return {
+            dx: value?.dx || 0,
+            dy: value?.dy || 0,
+            scaleX: value?.scaleX ?? 1,
+            scaleY: value?.scaleY ?? 1,
+            rotation: value?.rotation || 0
+        };
+    }
+
+    function getOverride(key) {
+        return normalizeOverride(overrides.get(key));
+    }
+
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -135,141 +330,873 @@
     window.addEventListener('resize', resize);
     resize();
 
-    // Update UI displays
-    wordCountInput.addEventListener('input', (e) => {
-        maxVisibleWords = parseInt(e.target.value);
-        wordCountVal.textContent = maxVisibleWords;
-    });
-
-    speedInput.addEventListener('input', (e) => {
-        wordDuration = parseInt(e.target.value);
-        speedVal.textContent = wordDuration;
-    });
-
-    resetBtn.addEventListener('click', () => {
-        currentTime = 0;
-        lastFrameTime = performance.now();
-        parseText();
-    });
-
-    textInput.addEventListener('input', parseText);
-
-    function parseText() {
-        const raw = textInput.value.trim();
-        // Split by whitespace and filter empty strings
-        words = raw.split(/\s+/).filter(w => w.length > 0);
+    function updatePlayButton() {
+        playPauseBtn.textContent = playing ? 'Pause' : 'Play';
     }
 
-    // Initialize
-    parseText();
-    lastFrameTime = performance.now();
+    function setStatus(text) {
+        statusEl.textContent = text;
+    }
 
-    /**
-     * CORE LOGIC: SINGLE LINE CONTAINER
-     * 
-     * Concept:
-     * 1. Calculate which "slice" of words should be visible based on time.
-     * 2. Draw them in a straight horizontal line at the center.
-     */
-    function draw() {
-        const now = performance.now();
-        const dt = now - lastFrameTime;
-        lastFrameTime = now;
+    function parseTimestampArray(raw) {
+        if (!Array.isArray(raw)) return [];
 
-        // Advance time
-        currentTime += dt;
+        return raw
+            .map(item => {
+                const word = String(item.word ?? '').trim();
+                let start = Number(item.start);
+                let end = Number(item.end);
 
-        // Clear Screen
-        ctx.fillStyle = '#050505';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                if (!word || !isFinite(start)) return null;
 
-        if (words.length === 0) {
-            requestAnimationFrame(draw);
-            return;
+                if (!isFinite(end) || end <= start) {
+                    end = start + 0.05;
+                }
+
+                return { word, start, end };
+            })
+            .filter(Boolean)
+            .sort((a, b) => a.start - b.start);
+    }
+
+    function assignTimestampTimings(flatWords, rawTimestamps) {
+        const timestamps = parseTimestampArray(rawTimestamps);
+
+        const timings = flatWords.map((_, index) => {
+            if (index < timestamps.length) {
+                return {
+                    start: timestamps[index].start,
+                    end: timestamps[index].end
+                };
+            }
+
+            return null;
+        });
+
+        // Fill missing timings synthetically
+        let lastEnd = 0;
+
+        for (let i = 0; i < timings.length; i++) {
+            if (!timings[i]) {
+                const start = lastEnd + 0.1;
+                const end = start + 0.3;
+                timings[i] = { start, end };
+            }
+
+            lastEnd = timings[i].end;
         }
 
-        // 1. Determine Current Word Index based on time
-        // How many full durations have passed?
-        const totalIndex = Math.floor(currentTime / wordDuration);
-        
-        // Clamp to valid range - NO LOOPING
-        const clampedIndex = Math.min(totalIndex, words.length - 1);
+        return {
+            timings,
+            assigned: Math.min(flatWords.length, timestamps.length),
+            timestampCount: timestamps.length
+        };
+    }
 
-        // 2. Determine the "Window" of words to show
-        // We want to show 'maxVisibleWords' ending at or before the current word
-        const visibleWords = [];
-        
-        // Calculate the start index of our window
-        // We want the current word to be the rightmost (last) in our display
-        let windowStart = clampedIndex - maxVisibleWords + 1;
-        
-        // Ensure we don't go below 0
-        if (windowStart < 0) {
-            windowStart = 0;
+    function buildSourceLinesSynthetic(rawLines) {
+        const lineDurSec = lineDurationMs / 1000;
+
+        let flatIndex = 0;
+
+        sourceLines = rawLines.map((text, lineIndex) => {
+            const wordStrings = text.split(/\s+/).filter(Boolean);
+
+            const lineStart = lineIndex * lineDurSec;
+            const lineEnd = lineStart + lineDurSec;
+
+            const wordDur = lineDurSec / Math.max(1, wordStrings.length);
+
+            const words = wordStrings.map((wordText, wordIndexInLine) => {
+                const start = lineStart + wordIndexInLine * wordDur;
+                const end = start + wordDur;
+
+                const wordObj = {
+                    id: `word_${flatIndex}`,
+                    text: wordText,
+                    start,
+                    end,
+                    lineId: `line_${lineIndex}`,
+                    wordIndexInLine
+                };
+
+                flatIndex++;
+                return wordObj;
+            });
+
+            return {
+                id: `line_${lineIndex}`,
+                text,
+                words,
+                start: lineStart,
+                end: lineEnd
+            };
+        });
+    }
+
+    function buildSourceLinesWithTimestamps(rawLines, rawTimestamps) {
+        const flatWords = rawLines.flatMap(line => line.split(/\s+/).filter(Boolean));
+
+        const { timings, assigned, timestampCount } =
+            assignTimestampTimings(flatWords, rawTimestamps);
+
+        let flatIndex = 0;
+
+        sourceLines = rawLines.map((text, lineIndex) => {
+            const wordStrings = text.split(/\s+/).filter(Boolean);
+
+            const words = wordStrings.map((wordText, wordIndexInLine) => {
+                const timing = timings[flatIndex] || { start: 0, end: 0.01 };
+
+                const wordObj = {
+                    id: `word_${flatIndex}`,
+                    text: wordText,
+                    start: timing.start,
+                    end: timing.end,
+                    lineId: `line_${lineIndex}`,
+                    wordIndexInLine
+                };
+
+                flatIndex++;
+                return wordObj;
+            });
+
+            const lineStart = words.length
+                ? Math.min(...words.map(w => w.start))
+                : 0;
+
+            const lineEnd = words.length
+                ? Math.max(...words.map(w => w.end))
+                : 0;
+
+            return {
+                id: `line_${lineIndex}`,
+                text,
+                words,
+                start: lineStart,
+                end: lineEnd
+            };
+        });
+
+        return { assigned, totalWords: flatWords.length, timestampCount };
+    }
+
+    function buildPages() {
+        pages = [];
+
+        for (let i = 0; i < sourceLines.length; i += lineMode) {
+            const pageLines = sourceLines.slice(i, i + lineMode);
+
+            const start = Math.min(...pageLines.map(l => l.start));
+            const end = Math.max(...pageLines.map(l => l.end));
+
+            pages.push({
+                id: `page_${pages.length}`,
+                lines: pageLines,
+                start,
+                end
+            });
         }
-        
-        // Collect words in the window
-        for (let i = 0; i < maxVisibleWords; i++) {
-            const idx = windowStart + i;
-            
-            // Only add if within bounds
-            if (idx < words.length) {
-                visibleWords.push({
-                    text: words[idx],
-                    offset: i
-                });
+
+        totalDuration = pages.reduce((max, p) => Math.max(max, p.end), 0);
+
+        timeSlider.max = String(totalDuration);
+        timeSlider.value = String(currentTime);
+    }
+
+    function rebuild() {
+        const rawLines = transcriptInput.value
+            .split('\n')
+            .map(l => l.trim())
+            .filter(l => l.length > 0);
+
+        const jsonText = timestampInput.value.trim();
+
+        let parsedTimestamps = null;
+        let jsonValid = false;
+
+        if (jsonText) {
+            try {
+                parsedTimestamps = JSON.parse(jsonText);
+                jsonValid = Array.isArray(parsedTimestamps) && parsedTimestamps.length > 0;
+            } catch (err) {
+                jsonValid = false;
             }
         }
 
-        // 3. Render the Container Line
-        renderSingleLineContainer(visibleWords);
+        if (jsonValid) {
+            const info = buildSourceLinesWithTimestamps(rawLines, parsedTimestamps);
+
+            setStatus(
+                `Using timestamps. Assigned ${info.assigned}/${info.totalWords} words. ` +
+                `Timestamp entries: ${info.timestampCount}.`
+            );
+        } else {
+            buildSourceLinesSynthetic(rawLines);
+
+            if (jsonText) {
+                setStatus('Invalid timestamp JSON. Using fallback duration per line.');
+            } else {
+                setStatus('No timestamp JSON. Using fallback duration per line.');
+            }
+        }
+
+        buildPages();
+
+        currentTime = 0;
+        selectedKey = null;
+
+        updatePlayButton();
+    }
+
+    function getVisiblePageIndex(time) {
+        if (!pages.length) return -1;
+
+        // Exact active page
+        for (let i = 0; i < pages.length; i++) {
+            const page = pages[i];
+
+            if (time >= page.start && time < page.end) {
+                return i;
+            }
+        }
+
+        // Exact end boundary
+        for (let i = 0; i < pages.length; i++) {
+            const page = pages[i];
+
+            if (Math.abs(time - page.end) < 0.0001) {
+                return i;
+            }
+        }
+
+        // Hold during gaps
+        if (holdGapsCheckbox.checked) {
+            let lastIndex = -1;
+
+            for (let i = 0; i < pages.length; i++) {
+                if (pages[i].start <= time) {
+                    lastIndex = i;
+                } else {
+                    break;
+                }
+            }
+
+            return lastIndex;
+        }
+
+        return -1;
+    }
+
+    function getPointerPos(e) {
+        const rect = canvas.getBoundingClientRect();
+
+        return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
+    }
+
+    function worldToLocal(px, py, centerX, centerY, rotation) {
+        const dx = px - centerX;
+        const dy = py - centerY;
+
+        const cos = Math.cos(-rotation);
+        const sin = Math.sin(-rotation);
+
+        return {
+            x: centerX + dx * cos - dy * sin,
+            y: centerY + dx * sin + dy * cos
+        };
+    }
+
+    function localToWorld(centerX, centerY, localX, localY, rotation, scaleX = 1, scaleY = 1) {
+        const x = localX * scaleX;
+        const y = localY * scaleY;
+
+        const cos = Math.cos(rotation);
+        const sin = Math.sin(rotation);
+
+        return {
+            x: centerX + x * cos - y * sin,
+            y: centerY + x * sin + y * cos
+        };
+    }
+
+    function hitBox(box, x, y) {
+        const pad = 8;
+
+        const local = worldToLocal(x, y, box.centerX, box.centerY, box.rotation);
+
+        return (
+            local.x >= box.x - pad &&
+            local.x <= box.x + box.width + pad &&
+            local.y >= box.y - pad &&
+            local.y <= box.y + box.height + pad
+        );
+    }
+
+    function findWordAt(x, y) {
+        if (selectedKey) {
+            const selectedBox = currentWordBoxes.find(b => b.key === selectedKey);
+            if (selectedBox && hitBox(selectedBox, x, y)) {
+                return selectedBox;
+            }
+        }
+
+        for (let i = currentWordBoxes.length - 1; i >= 0; i--) {
+            const box = currentWordBoxes[i];
+            if (hitBox(box, x, y)) {
+                return box;
+            }
+        }
+
+        return null;
+    }
+
+    function updateCanvasCursor() {
+        if (dragging) {
+            if (dragMode === 'resize') canvas.style.cursor = 'nwse-resize';
+            else if (dragMode === 'rotate') canvas.style.cursor = 'crosshair';
+            else canvas.style.cursor = 'grabbing';
+        } else if (selectedKey) {
+            canvas.style.cursor = 'grab';
+        } else {
+            canvas.style.cursor = 'default';
+        }
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+        const pos = getPointerPos(e);
+        const box = findWordAt(pos.x, pos.y);
+
+        if (box) {
+            selectedKey = box.key;
+            dragging = true;
+            activePointerId = e.pointerId;
+
+            if (e.altKey && e.ctrlKey) {
+                dragMode = 'rotate';
+            } else if (e.altKey) {
+                dragMode = 'resize';
+            } else {
+                dragMode = 'move';
+            }
+
+            dragStart = pos;
+            dragStartCenter = { x: box.centerX, y: box.centerY };
+
+            const existing = getOverride(box.key);
+
+            dragStartOffset = {
+                dx: existing.dx,
+                dy: existing.dy
+            };
+
+            dragStartScale = {
+                scaleX: existing.scaleX,
+                scaleY: existing.scaleY
+            };
+
+            dragStartRotation = existing.rotation;
+
+            if (canvas.setPointerCapture) {
+                canvas.setPointerCapture(e.pointerId);
+            }
+        } else {
+            selectedKey = null;
+            dragging = false;
+            activePointerId = null;
+            dragMode = 'move';
+        }
+
+        updateCanvasCursor();
+    });
+
+    window.addEventListener('pointermove', (e) => {
+        if (!dragging || e.pointerId !== activePointerId || !selectedKey) return;
+
+        const pos = getPointerPos(e);
+        const existing = getOverride(selectedKey);
+
+        if (dragMode === 'rotate') {
+            const dx = pos.x - dragStartCenter.x;
+            const dy = pos.y - dragStartCenter.y;
+
+            const angle = Math.atan2(dy, dx);
+
+            const startDx = dragStart.x - dragStartCenter.x;
+            const startDy = dragStart.y - dragStartCenter.y;
+            const startAngle = Math.atan2(startDy, startDx);
+
+            let rotation = dragStartRotation + (angle - startAngle);
+
+            // Snap to 15 degrees if Shift is also held
+            if (e.shiftKey) {
+                const snap = Math.PI / 12;
+                rotation = Math.round(rotation / snap) * snap;
+            }
+
+            overrides.set(selectedKey, {
+                ...existing,
+                rotation
+            });
+        } else if (dragMode === 'resize') {
+            const dx = pos.x - dragStart.x;
+            const dy = pos.y - dragStart.y;
+
+            let nextScaleX = existing.scaleX;
+            let nextScaleY = existing.scaleY;
+
+            if (e.shiftKey) {
+                const factor = clamp(1 + (dx + dy) / 250, 0.1, 20);
+                nextScaleX = clamp(dragStartScale.scaleX * factor, 0.2, 10);
+                nextScaleY = clamp(dragStartScale.scaleY * factor, 0.2, 10);
+            } else {
+                nextScaleX = clamp(dragStartScale.scaleX + dx / 250, 0.2, 10);
+                nextScaleY = clamp(dragStartScale.scaleY + dy / 250, 0.2, 10);
+            }
+
+            overrides.set(selectedKey, {
+                ...existing,
+                scaleX: nextScaleX,
+                scaleY: nextScaleY
+            });
+        } else {
+            overrides.set(selectedKey, {
+                ...existing,
+                dx: dragStartOffset.dx + (pos.x - dragStart.x),
+                dy: dragStartOffset.dy + (pos.y - dragStart.y)
+            });
+        }
+    });
+
+    function endPointerDrag(e) {
+        if (e.pointerId === activePointerId) {
+            dragging = false;
+            activePointerId = null;
+            dragMode = 'move';
+            updateCanvasCursor();
+        }
+    }
+
+    window.addEventListener('pointerup', endPointerDrag);
+    window.addEventListener('pointercancel', endPointerDrag);
+
+    canvas.addEventListener('dblclick', (e) => {
+        const pos = getPointerPos(e);
+        const box = findWordAt(pos.x, pos.y);
+
+        if (box) {
+            overrides.delete(box.key);
+
+            if (selectedKey === box.key) {
+                selectedKey = null;
+            }
+        }
+    });
+
+    function drawWordTransformed(text, centerX, centerY, baseWidth, scaleX, scaleY, rotation) {
+        if (!text) return;
+
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(rotation);
+        ctx.scale(scaleX, scaleY);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = 1;
+        ctx.fillText(text, -baseWidth / 2, 0);
+
+        ctx.restore();
+    }
+
+    function renderPage(page) {
+        currentWordBoxes = [];
+
+        if (!page || !page.lines.length) {
+            if (selectedKey && !dragging) {
+                selectedKey = null;
+            }
+            return;
+        }
+
+        const baseGap = 20;
+
+        const buildLayout = (fontSize) => {
+            ctx.font = `bold ${fontSize}px ${fontFamily}`;
+
+            const layouts = page.lines.map(line => {
+                const words = line.words.map(wordObj => {
+                    return {
+                        wordObj,
+                        width: ctx.measureText(wordObj.text).width
+                    };
+                });
+
+                const lineWidth =
+                    words.reduce((sum, w) => sum + w.width, 0) +
+                    Math.max(0, words.length - 1) * baseGap;
+
+                return {
+                    line,
+                    words,
+                    lineWidth
+                };
+            });
+
+            const maxLineWidth = layouts.reduce((max, l) => Math.max(max, l.lineWidth), 1);
+
+            return {
+                layouts,
+                maxLineWidth
+            };
+        };
+
+        let fontSize = 48;
+        let layout = buildLayout(fontSize);
+
+        const maxAllowedWidth = Math.max(100, canvas.width * 0.90);
+        const maxAllowedHeight = Math.max(100, canvas.height * 0.80);
+
+        const estimatedHeight = fontSize * 1.5 * page.lines.length;
+
+        let scale = 1;
+
+        if (layout.maxLineWidth > maxAllowedWidth) {
+            scale = Math.min(scale, maxAllowedWidth / layout.maxLineWidth);
+        }
+
+        if (estimatedHeight > maxAllowedHeight) {
+            scale = Math.min(scale, maxAllowedHeight / estimatedHeight);
+        }
+
+        if (scale < 1) {
+            fontSize = Math.max(16, Math.floor(fontSize * scale));
+            layout = buildLayout(fontSize);
+        }
+
+        ctx.font = `bold ${fontSize}px ${fontFamily}`;
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'left';
+
+        const lineHeight = fontSize * 1.5;
+        const totalHeight = lineHeight * page.lines.length;
+
+        const startY = canvas.height / 2 - totalHeight / 2 + lineHeight / 2;
+
+        let cursor = null;
+        let selectedDraw = null;
+
+        layout.layouts.forEach((lineLayout, lineIndex) => {
+            const y = startY + lineIndex * lineHeight;
+
+            let currentX = (canvas.width - lineLayout.lineWidth) / 2;
+
+            let totalChars = 0;
+            let globalCharsToShow = 0;
+            let charsConsumed = 0;
+
+            if (effectMode === 'typewriter_line') {
+                totalChars =
+                    lineLayout.line.words.reduce((sum, w) => sum + w.text.length, 0) +
+                    Math.max(0, lineLayout.line.words.length - 1);
+
+                const lineDuration = Math.max(0.001, lineLayout.line.end - lineLayout.line.start);
+                const lineProgress = clamp((currentTime - lineLayout.line.start) / lineDuration, 0, 1);
+
+                globalCharsToShow = Math.ceil(lineProgress * totalChars);
+            }
+
+            lineLayout.words.forEach((item, wordIndex) => {
+                const wordObj = item.wordObj;
+                const key = wordObj.id;
+
+                const transform = getOverride(key);
+
+                const finalLeft = currentX + transform.dx;
+                const finalCenterY = y + transform.dy;
+
+                const centerX = finalLeft + item.width / 2;
+
+                const scaledWidth = item.width * transform.scaleX;
+                const scaledHeight = fontSize * 1.15 * transform.scaleY;
+
+                const box = {
+                    key,
+                    x: centerX - scaledWidth / 2,
+                    y: finalCenterY - scaledHeight / 2,
+                    width: scaledWidth,
+                    height: scaledHeight,
+                    centerX,
+                    centerY: finalCenterY,
+                    rotation: transform.rotation
+                };
+
+                currentWordBoxes.push(box);
+
+                let textToDraw = '';
+
+                if (effectMode === 'timestamp_none') {
+                    if (currentTime >= wordObj.start) {
+                        textToDraw = wordObj.text;
+                    }
+                }
+
+                else if (effectMode === 'typewriter_word') {
+                    const duration = Math.max(0.001, wordObj.end - wordObj.start);
+                    const wordProgress = clamp((currentTime - wordObj.start) / duration, 0, 1);
+
+                    const charsToShow = Math.ceil(wordProgress * wordObj.text.length);
+                    textToDraw = wordObj.text.substring(0, charsToShow);
+
+                    if (wordProgress > 0 && wordProgress < 1) {
+                        const partialWidth = ctx.measureText(textToDraw).width;
+
+                        const localX = -item.width / 2 + partialWidth;
+                        const world = localToWorld(
+                            centerX,
+                            finalCenterY,
+                            localX,
+                            0,
+                            transform.rotation,
+                            transform.scaleX,
+                            transform.scaleY
+                        );
+
+                        cursor = {
+                            x: world.x,
+                            y: world.y
+                        };
+                    }
+                }
+
+                else if (effectMode === 'typewriter_line') {
+                    const available = globalCharsToShow - charsConsumed;
+                    const charsForWord = Math.max(0, Math.min(wordObj.text.length, available));
+
+                    textToDraw = wordObj.text.substring(0, charsForWord);
+
+                    if (charsForWord > 0 && charsForWord < wordObj.text.length) {
+                        const partialWidth = ctx.measureText(textToDraw).width;
+
+                        const localX = -item.width / 2 + partialWidth;
+                        const world = localToWorld(
+                            centerX,
+                            finalCenterY,
+                            localX,
+                            0,
+                            transform.rotation,
+                            transform.scaleX,
+                            transform.scaleY
+                        );
+
+                        cursor = {
+                            x: world.x,
+                            y: world.y
+                        };
+                    } else if (
+                        charsForWord === wordObj.text.length &&
+                        wordIndex < lineLayout.words.length - 1 &&
+                        available === wordObj.text.length + 1
+                    ) {
+                        const world = localToWorld(
+                            centerX,
+                            finalCenterY,
+                            item.width / 2 + baseGap / 2,
+                            0,
+                            transform.rotation,
+                            transform.scaleX,
+                            1
+                        );
+
+                        cursor = {
+                            x: world.x,
+                            y: world.y
+                        };
+                    }
+
+                    charsConsumed += wordObj.text.length;
+
+                    if (wordIndex < lineLayout.words.length - 1) {
+                        charsConsumed += 1; // virtual space
+                    }
+                }
+
+                const isSelected = key === selectedKey;
+
+                if (isSelected) {
+                    selectedDraw = {
+                        textToDraw,
+                        centerX,
+                        centerY: finalCenterY,
+                        baseWidth: item.width,
+                        scaleX: transform.scaleX,
+                        scaleY: transform.scaleY,
+                        rotation: transform.rotation,
+                        box
+                    };
+                } else {
+                    drawWordTransformed(
+                        textToDraw,
+                        centerX,
+                        finalCenterY,
+                        item.width,
+                        transform.scaleX,
+                        transform.scaleY,
+                        transform.rotation
+                    );
+                }
+
+                currentX += item.width + baseGap;
+            });
+        });
+
+        // Draw selected word on top with rotated border
+        if (selectedDraw) {
+            drawWordTransformed(
+                selectedDraw.textToDraw,
+                selectedDraw.centerX,
+                selectedDraw.centerY,
+                selectedDraw.baseWidth,
+                selectedDraw.scaleX,
+                selectedDraw.scaleY,
+                selectedDraw.rotation
+            );
+
+            const b = selectedDraw.box;
+            const pad = Math.max(3, fontSize * 0.08);
+
+            ctx.save();
+            ctx.translate(b.centerX, b.centerY);
+            ctx.rotate(b.rotation);
+
+            ctx.strokeStyle = '#00d1ff';
+            ctx.lineWidth = Math.max(2, fontSize / 18);
+
+            ctx.strokeRect(
+                -b.width / 2 - pad,
+                -b.height / 2 - pad,
+                b.width + pad * 2,
+                b.height + pad * 2
+            );
+
+            ctx.restore();
+        } else if (selectedKey && !dragging) {
+            selectedKey = null;
+        }
+
+        // Cursor
+        if (cursor) {
+            const blink = Math.floor(performance.now() / 400) % 2 === 0;
+
+            if (blink) {
+                ctx.fillStyle = '#ffffff';
+
+                const cursorHeight = fontSize * 0.9;
+
+                ctx.fillRect(
+                    cursor.x + 2,
+                    cursor.y - cursorHeight / 2,
+                    Math.max(2, fontSize / 12),
+                    cursorHeight
+                );
+            }
+        }
+
+        updateCanvasCursor();
+    }
+
+    function draw() {
+        const now = performance.now();
+        const dt = (now - lastFrameTime) / 1000;
+        lastFrameTime = now;
+
+        if (playing && !selectedKey && !scrubbing) {
+            currentTime += dt;
+        }
+
+        if (totalDuration > 0 && currentTime > totalDuration + 2) {
+            currentTime = 0;
+        }
+
+        if (!scrubbing) {
+            timeSlider.value = String(currentTime);
+        }
+
+        timeDisplay.textContent = currentTime.toFixed(2) + 's';
+
+        ctx.fillStyle = '#050505';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const visiblePageIndex = getVisiblePageIndex(currentTime);
+        const visiblePage = visiblePageIndex >= 0 ? pages[visiblePageIndex] : null;
+
+        renderPage(visiblePage);
 
         requestAnimationFrame(draw);
     }
 
-    function renderSingleLineContainer(wordObjects) {
-        ctx.font = "bold 48px Arial";
-        ctx.textBaseline = "middle";
-        
-        // Measure total width to center the whole group
-        let totalWidth = 0;
-        const gap = 20; // Space between words
-        
-        wordObjects.forEach(obj => {
-            const metrics = ctx.measureText(obj.text);
-            totalWidth += metrics.width;
-        });
-        
-        // Add gaps
-        if (wordObjects.length > 1) {
-            totalWidth += (wordObjects.length - 1) * gap;
-        }
+    // UI Events
+    buildBtn.addEventListener('click', rebuild);
 
-        // Starting X position (Centered)
-        let currentX = (canvas.width - totalWidth) / 2;
-        const centerY = canvas.height / 2;
+    transcriptInput.addEventListener('change', rebuild);
+    timestampInput.addEventListener('change', rebuild);
 
-        // Draw each word
-        wordObjects.forEach((obj, index) => {
-            const metrics = ctx.measureText(obj.text);
-            
-            // Position: move by half of current word width to center it
-            const x = currentX + (metrics.width / 2);
-            
-            // Basic styling
-            ctx.fillStyle = "#ffffff";
-            ctx.globalAlpha = 1.0;
+    lineModeSelect.addEventListener('change', (e) => {
+        lineMode = parseInt(e.target.value, 10);
+        buildPages();
 
-            ctx.fillText(obj.text, x, centerY);
+        currentTime = 0;
+        selectedKey = null;
+    });
 
-            // Move position for next word: add full width + gap
-            currentX += metrics.width + gap;
-        });
-    }
+    effectModeSelect.addEventListener('change', (e) => {
+        effectMode = e.target.value;
+    });
 
-    // Start Loop
+    fontStyleSelect.addEventListener('change', (e) => {
+        fontFamily = e.target.value;
+    });
+
+    durationInput.addEventListener('input', (e) => {
+        lineDurationMs = parseInt(e.target.value, 10);
+        durationVal.textContent = lineDurationMs;
+
+        rebuild();
+    });
+
+    playPauseBtn.addEventListener('click', () => {
+        playing = !playing;
+        updatePlayButton();
+    });
+
+    timeSlider.addEventListener('pointerdown', () => {
+        scrubbing = true;
+    });
+
+    window.addEventListener('pointerup', () => {
+        scrubbing = false;
+    });
+
+    timeSlider.addEventListener('input', () => {
+        currentTime = parseFloat(timeSlider.value) || 0;
+    });
+
+    restartBtn.addEventListener('click', () => {
+        currentTime = 0;
+        playing = true;
+        selectedKey = null;
+        updatePlayButton();
+    });
+
+    resetTransformsBtn.addEventListener('click', () => {
+        overrides.clear();
+        selectedKey = null;
+    });
+
+    // Initialize
+    rebuild();
     requestAnimationFrame(draw);
-
 </script>
 </body>
 </html>

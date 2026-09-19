@@ -27,12 +27,9 @@ if (fullscreenBtn && canvasViewport) {
     }
   });
 
-  // Listen for fullscreen changes (including pressing 'Esc' to exit)
   document.addEventListener('fullscreenchange', () => {
-    // Wait a brief moment for the browser to finish the transition
     setTimeout(() => {
       resizeCanvas();
-
       if (typeof buildWordStructuresFromAudio === 'function' && typeof buildWordStructures === 'function' && typeof drawFrameAtCurrentTime === 'function') {
         if (isAudioSyncMode) {
           buildWordStructuresFromAudio(activeWordsData);
@@ -71,15 +68,12 @@ function drawDebugGrid() {
   if (!isDebugMode) return;
 
   ctx.save();
-
-  // 1. Safe Text Area Boundary (the 20px padding used for wrapping)
   const padding = 20;
   ctx.strokeStyle = 'rgba(255, 255, 0, 0.3)';
   ctx.lineWidth = 1;
   ctx.setLineDash([5, 5]);
   ctx.strokeRect(padding, padding, canvas.width - (padding * 2), canvas.height - (padding * 2));
 
-  // 2. Center Crosshair
   const centerX = canvas.width / 2;
   const centerY = canvas.height / 2;
 
@@ -92,12 +86,10 @@ function drawDebugGrid() {
   ctx.lineTo(canvas.width, centerY);
   ctx.stroke();
 
-  // 3. Grid Lines (every 50px)
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
   ctx.lineWidth = 1;
   ctx.setLineDash([2, 4]);
   ctx.beginPath();
-
   for (let x = 0; x <= canvas.width; x += 50) {
     ctx.moveTo(x, 0);
     ctx.lineTo(x, canvas.height);
@@ -108,7 +100,6 @@ function drawDebugGrid() {
   }
   ctx.stroke();
 
-  // 4. Coordinate Labels
   ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
   ctx.font = '10px monospace';
   ctx.fillText(`W: ${canvas.width}px | H: ${canvas.height}px`, 5, 15);
@@ -138,12 +129,92 @@ function drawMarquee() {
   ctx.restore();
 }
 
-// --- Bounding Box Render Logic ---
+// --- Bounding Box Render Logic (FIXED) ---
 function drawWordHighlight(obj, activeTime, driftSpeed, fontSize) {
   const wordScale = obj.scale || 1.0;
+  const scaleX = obj.scaleX || wordScale;
+  const scaleY = obj.scaleY || wordScale;
+  
   const scaledFontSize = fontSize * wordScale;
 
-  // Measure text directly so the box always matches the current size
+  ctx.font = `${scaledFontSize}px ${fontStyleInput.value}`;
+  const scaledTracking = parseInt(trackingInput.value, 10) * wordScale;
+
+  // Measure text accurately
+  let scaledWidth = 0;
+  obj.text.split('').forEach(char => {
+    scaledWidth += ctx.measureText(char).width + scaledTracking;
+  });
+  scaledWidth = Math.max(scaledWidth, 1); // Prevent zero width
+
+  const currentDrift = isAudioSyncMode ? (activeTime - obj.startTime) * driftSpeed * 10 : 0;
+  const currentY = obj.y - currentDrift;
+
+  const padding = 3;
+  
+  // Calculate center of the word for rotation
+  const centerX = obj.x + (scaledWidth / 2);
+  const centerY = currentY - (scaledFontSize / 2);
+
+  const rotation = obj.rotation || 0;
+  const rotationRad = rotation * Math.PI / 180;
+
+  ctx.save();
+  
+  // Rotate around the CENTER of the word, not baseline-left
+  ctx.translate(centerX, centerY);
+  ctx.rotate(rotationRad);
+  ctx.translate(-centerX, -centerY);
+
+  // Draw bounding box
+  const boxX = obj.x - padding;
+  const boxY = currentY - scaledFontSize - padding;
+  const boxWidth = scaledWidth + (padding * 2);
+  const boxHeight = scaledFontSize + (padding * 2);
+
+  ctx.fillStyle = 'rgba(0, 229, 255, 0.15)';
+  ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+  ctx.strokeStyle = '#00e5ff';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+  
+  // Rotation handle - positioned relative to the box, will rotate with it
+  const handleSize = 12;
+  const handleCenterX = obj.x + (scaledWidth / 2);
+  const handleCenterY = boxY - handleSize - 4;
+  
+  ctx.fillStyle = '#00e5ff';
+  ctx.beginPath();
+  ctx.arc(handleCenterX, handleCenterY, handleSize / 2, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Curved arrow for rotation indicator
+  ctx.strokeStyle = '#00e5ff';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(handleCenterX, handleCenterY, handleSize * 0.9, -Math.PI * 0.3, Math.PI * 0.8);
+  ctx.stroke();
+  
+  // Arrowhead
+  const arrowAngle = Math.PI * 0.8;
+  const arrowX = handleCenterX + Math.cos(arrowAngle) * handleSize * 0.9;
+  const arrowY = handleCenterY + Math.sin(arrowAngle) * handleSize * 0.9;
+  ctx.beginPath();
+  ctx.moveTo(arrowX, arrowY);
+  ctx.lineTo(arrowX - 3 * Math.cos(arrowAngle - Math.PI / 6), arrowY - 3 * Math.sin(arrowAngle - Math.PI / 6));
+  ctx.lineTo(arrowX - 3 * Math.cos(arrowAngle + Math.PI / 6), arrowY - 3 * Math.sin(arrowAngle + Math.PI / 6));
+  ctx.closePath();
+  ctx.fillStyle = '#00e5ff';
+  ctx.fill();
+  
+  ctx.restore();
+}
+
+// --- Hit Testing for Rotated/Scaled Words ---
+function isPointInWord(pointX, pointY, obj, activeTime, driftSpeed, fontSize) {
+  const wordScale = obj.scale || 1.0;
+  const scaledFontSize = fontSize * wordScale;
+  
   ctx.font = `${scaledFontSize}px ${fontStyleInput.value}`;
   const scaledTracking = parseInt(trackingInput.value, 10) * wordScale;
 
@@ -155,57 +226,218 @@ function drawWordHighlight(obj, activeTime, driftSpeed, fontSize) {
   const currentDrift = isAudioSyncMode ? (activeTime - obj.startTime) * driftSpeed * 10 : 0;
   const currentY = obj.y - currentDrift;
 
-  const padding = 2;
-  const x = obj.x - padding;
-  const y = currentY - scaledFontSize - padding;
-  const width = scaledWidth + (padding * 2);
-  const height = scaledFontSize + (padding * 2);
+  const centerX = obj.x + (scaledWidth / 2);
+  const centerY = currentY - (scaledFontSize / 2);
+  const rotation = (obj.rotation || 0) * Math.PI / 180;
 
-  // Get rotation value (default to 0 if not set)
-  const rotation = obj.rotation || 0;
+  // Transform point to word's local coordinate system
+  const dx = pointX - centerX;
+  const dy = pointY - centerY;
+  const cos = Math.cos(-rotation);
+  const sin = Math.sin(-rotation);
+  
+  const localX = centerX + dx * cos - dy * sin;
+  const localY = centerY + dx * sin + dy * cos;
+
+  const padding = 5; // Extra padding for easier clicking
+  const boxX = obj.x - padding;
+  const boxY = currentY - scaledFontSize - padding;
+  const boxWidth = scaledWidth + (padding * 2);
+  const boxHeight = scaledFontSize + (padding * 2);
+
+  return (
+    localX >= boxX &&
+    localX <= boxX + boxWidth &&
+    localY >= boxY &&
+    localY <= boxY + boxHeight
+  );
+}
+
+// --- Multi-Line Display Mode Support ---
+// Add these to your main.js or canvas.js
+
+let displayMode = 1; // 1, 2, or 3 lines
+let transcriptLines = [];
+let timestampData = [];
+
+function setDisplayMode(mode) {
+  displayMode = Math.max(1, Math.min(3, mode));
+  if (typeof buildWordStructures === 'function') {
+    buildWordStructures();
+    drawFrameAtCurrentTime();
+  }
+}
+
+function parseTranscript(text) {
+  transcriptLines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  return transcriptLines;
+}
+
+function parseTimestamps(jsonText) {
+  try {
+    const parsed = JSON.parse(jsonText);
+    if (Array.isArray(parsed)) {
+      timestampData = parsed
+        .map(item => ({
+          word: String(item.word || '').trim(),
+          start: Number(item.start) || 0,
+          end: Number(item.end) || 0
+        }))
+        .filter(item => item.word && item.end > item.start)
+        .sort((a, b) => a.start - b.start);
+      return timestampData;
+    }
+  } catch (e) {
+    console.error('Invalid timestamp JSON:', e);
+  }
+  timestampData = [];
+  return [];
+}
+
+// --- Text Effects ---
+function applyTextEffect(ctx, word, effect, progress) {
+  const effects = {
+    none: () => {
+      ctx.fillStyle = '#ffffff';
+      return { scale: 1, color: '#ffffff' };
+    },
+    typewriter: () => {
+      const charsToShow = Math.ceil(progress * word.length);
+      return { 
+        text: word.substring(0, charsToShow),
+        scale: 1, 
+        color: '#ffffff' 
+      };
+    },
+    emphasis: () => {
+      const pulse = Math.sin(performance.now() / 200) * 0.1 + 1;
+      const hue = (performance.now() / 20) % 360;
+      return { 
+        scale: pulse, 
+        color: `hsl(${hue}, 70%, 60%)` 
+      };
+    },
+    glitch: () => {
+      const shouldGlitch = Math.random() > 0.92;
+      if (shouldGlitch) {
+        const offsetX = (Math.random() - 0.5) * 4;
+        const offsetY = (Math.random() - 0.5) * 4;
+        const r = Math.floor(Math.random() * 255);
+        const g = Math.floor(Math.random() * 255);
+        const b = Math.floor(Math.random() * 255);
+        return {
+          scale: 1,
+          color: `rgb(${r}, ${g}, ${b})`,
+          offset: { x: offsetX, y: offsetY }
+        };
+      }
+      return { scale: 1, color: '#ffffff' };
+    }
+  };
+
+  return (effects[effect] || effects.none)();
+}
+
+// --- Draw Word with Effects and Transforms ---
+function drawWordWithEffects(word, x, y, fontSize, rotation, scale, effect, progress) {
+  const effectResult = applyTextEffect(ctx, word, effect, progress);
+  const finalText = effectResult.text || word;
+  const finalScale = (scale || 1) * (effectResult.scale || 1);
+  const finalColor = effectResult.color || '#ffffff';
+  const offset = effectResult.offset || { x: 0, y: 0 };
 
   ctx.save();
-  // Apply rotation around the word's center
-  ctx.translate(obj.x, currentY);
-  ctx.rotate(rotation * Math.PI / 180);
-  ctx.translate(-obj.x, -currentY);
+  
+  // Apply transforms
+  ctx.translate(x + offset.x, y + offset.y);
+  if (rotation) {
+    ctx.rotate(rotation * Math.PI / 180);
+  }
+  if (finalScale !== 1) {
+    ctx.scale(finalScale, finalScale);
+  }
 
-  // Draw rotated bounding box
-  ctx.fillStyle = 'rgba(0, 229, 255, 0.15)';
-  ctx.fillRect(x, y, width, height);
-  ctx.strokeStyle = '#00e5ff';
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(x, y, width, height);
-  
-  // Draw rotation handle icon at top-center of selected word (centered on border)
-  // Adjusted: moved right by 50% and up by 5%
-  const handleSize = 12;
-  const handleY = y - handleSize - 6 - (height * 0.05); // Move up by 5% of height
-  const centerX = obj.x + (width * 0.5); // Move right by 50% of width
-  
-  ctx.fillStyle = '#00e5ff';
-  ctx.beginPath();
-  ctx.arc(centerX, handleY + (handleSize / 2), handleSize / 2, 0, Math.PI * 2);
-  ctx.fill();
-  
-  // Draw curved arrow to indicate rotation
-  ctx.strokeStyle = '#00e5ff';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.arc(centerX, handleY + (handleSize / 2), handleSize * 0.9, -Math.PI * 0.3, Math.PI * 0.8);
-  ctx.stroke();
-  
-  // Draw arrowhead
-  const arrowAngle = Math.PI * 0.8;
-  const arrowX = centerX + Math.cos(arrowAngle) * handleSize * 0.9;
-  const arrowY = (handleY + (handleSize / 2)) + Math.sin(arrowAngle) * handleSize * 0.9;
-  ctx.beginPath();
-  ctx.moveTo(arrowX, arrowY);
-  ctx.lineTo(arrowX - 3 * Math.cos(arrowAngle - Math.PI / 6), arrowY - 3 * Math.sin(arrowAngle - Math.PI / 6));
-  ctx.lineTo(arrowX - 3 * Math.cos(arrowAngle + Math.PI / 6), arrowY - 3 * Math.sin(arrowAngle + Math.PI / 6));
-  ctx.closePath();
-  ctx.fillStyle = '#00e5ff';
-  ctx.fill();
+  ctx.fillStyle = finalColor;
+  ctx.font = `${fontSize}px ${fontStyleInput.value}`;
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(finalText, 0, 0);
   
   ctx.restore();
+}
+
+// --- Helper: Get Visible Lines Based on Display Mode ---
+function getVisibleLines(currentLineIndex, totalLines, mode) {
+  const lines = [];
+  
+  if (mode === 1) {
+    // Single line mode
+    if (currentLineIndex < totalLines) {
+      lines.push(currentLineIndex);
+    }
+  } else if (mode === 2) {
+    // Two line mode - show current and next
+    if (currentLineIndex < totalLines) {
+      lines.push(currentLineIndex);
+    }
+    if (currentLineIndex + 1 < totalLines) {
+      lines.push(currentLineIndex + 1);
+    }
+  } else if (mode === 3) {
+    // Three line mode - show previous, current, next
+    if (currentLineIndex > 0) {
+      lines.push(currentLineIndex - 1);
+    }
+    if (currentLineIndex < totalLines) {
+      lines.push(currentLineIndex);
+    }
+    if (currentLineIndex + 1 < totalLines) {
+      lines.push(currentLineIndex + 1);
+    }
+  }
+  
+  return lines;
+}
+
+// --- Timestamp-based Timing ---
+function getWordProgressFromTimestamp(wordIndex, currentTime) {
+  if (!timestampData || timestampData.length === 0) {
+    return null; // Use fallback timing
+  }
+  
+  if (wordIndex >= timestampData.length) {
+    return 1; // Word is complete
+  }
+  
+  const ts = timestampData[wordIndex];
+  if (currentTime < ts.start) {
+    return 0; // Word hasn't started
+  }
+  if (currentTime >= ts.end) {
+    return 1; // Word is complete
+  }
+  
+  return (currentTime - ts.start) / (ts.end - ts.start);
+}
+
+function getCurrentLineFromTimestamp(currentTime, lines) {
+  if (!timestampData || timestampData.length === 0) {
+    return 0;
+  }
+  
+  let wordIndex = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const lineWords = lines[i].split(/\s+/).filter(Boolean);
+    const lineEndWordIndex = wordIndex + lineWords.length;
+    
+    if (lineEndWordIndex > 0 && lineEndWordIndex <= timestampData.length) {
+      const lastWordTs = timestampData[lineEndWordIndex - 1];
+      if (currentTime <= lastWordTs.end) {
+        return i;
+      }
+    }
+    
+    wordIndex = lineEndWordIndex;
+  }
+  
+  return lines.length - 1;
 }
