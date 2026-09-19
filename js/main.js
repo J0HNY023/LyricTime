@@ -29,6 +29,14 @@ function drawFrameAtCurrentTime() {
     return;
   }
   
+  // Handle single-line layout
+  if (layoutModeInput.value === 'single-line') {
+    renderSingleLine(activeTime, fontSize, fontStyle, tracking, driftSpeed);
+    drawDebugGrid();
+    drawMarquee();
+    return;
+  }
+  
   if (layoutModeInput.value === 'focused-center') {
     renderFocusedCenter(activeTime, fontSize, fontStyle, tracking, driftSpeed);
   } else {
@@ -68,7 +76,9 @@ function animate(timestamp) {
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if (layoutModeInput.value === 'focused-center') {
+    if (layoutModeInput.value === 'single-line') {
+      renderSingleLine(currentTime, fontSize, fontStyle, tracking, driftSpeed);
+    } else if (layoutModeInput.value === 'focused-center') {
       renderFocusedCenter(currentTime, fontSize, fontStyle, tracking, driftSpeed);
     } else {
       wordObjects.forEach(wordObj => {
@@ -98,7 +108,10 @@ function animate(timestamp) {
 
     let isAnyWordActive = false;
 
-    if (layoutModeInput.value === 'focused-center') {
+    if (layoutModeInput.value === 'single-line') {
+      renderSingleLine(elapsed, fontSize, fontStyle, tracking, driftSpeed);
+      isAnyWordActive = true; // keep the animation loop running
+    } else if (layoutModeInput.value === 'focused-center') {
       renderFocusedCenter(elapsed, fontSize, fontStyle, tracking, driftSpeed);
       isAnyWordActive = true; // keep the animation loop running
     } else {

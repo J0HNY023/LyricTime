@@ -38,6 +38,11 @@ function buildWordStructures() {
     // Start near the bottom and let the standard wrap logic take over
     currentY = canvas.height - padding - (fontSize * 2);
   }
+  
+  // For single-line mode, position all words at the center Y (they will be rendered horizontally)
+  if (layoutModeInput.value === 'single-line') {
+    currentY = (canvas.height / 2) - (fontSize / 2);
+  }
 
   // Add word gap for all layout modes
   const wordGap = parseFloat(centerXOffsetInput.value) || 0;
@@ -197,6 +202,11 @@ function buildWordStructuresFromAudio(wordsData) {
   if (layoutModeInput && layoutModeInput.value === 'subtitle') {
     // Start near the bottom and let the standard wrap logic take over
     currentY = canvas.height - padding - (fontSize * 2);
+  }
+  
+  // For single-line mode, position all words at the center Y (they will be rendered horizontally)
+  if (layoutModeInput && layoutModeInput.value === 'single-line') {
+    currentY = (canvas.height / 2) - (fontSize / 2);
   }
 
   let globalIdx = 0;
@@ -448,10 +458,133 @@ function renderFocusedCenter(elapsed, fontSize, fontStyle, tracking, driftSpeed)
   ctx.textBaseline = 'alphabetic';
 }
 
+// --- Single-Line Layout Render Function ---
+function renderSingleLine(elapsed, fontSize, fontStyle, tracking, driftSpeed) {
+  if (wordObjects.length === 0) return;
+
+  const activeTime = elapsed;
+  const maxWords = parseInt(maxWordsDisplayInput ? maxWordsDisplayInput.value : 4, 10);
+  
+  // Find the current word index based on time
+  let currentWordIndex = -1;
+  for (let i = 0; i < wordObjects.length; i++) {
+    if (activeTime >= wordObjects[i].startTime && activeTime <= wordObjects[i].startTime + wordObjects[i].duration) {
+      currentWordIndex = i;
+      break;
+    }
+  }
+  
+  if (currentWordIndex === -1) {
+    // No word is currently active, check if we should show the next word fading in
+    // or keep showing the last word fading out
+    return;
+  }
+
+  const lineHeight = fontSize * 2.5;
+  const centerY = canvas.height / 2;
+  const centerX = canvas.width / 2;
+
+  ctx.font = `${fontSize}px ${fontStyle}`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+
+  // Calculate which words to display (centered around current word)
+  const wordsToShow = [];
+  const startIdx = Math.max(0, currentWordIndex - Math.floor((maxWords - 1) / 2));
+  const endIdx = Math.min(wordObjects.length, startIdx + maxWords);
+  
+  // Adjust start if we're near the end
+  const actualStart = Math.max(0, endIdx - maxWords);
+  
+  for (let i = actualStart; i < endIdx; i++) {
+    wordsToShow.push(wordObjects[i]);
+  }
+
+  // Calculate total width to center the line
+  const wordGap = parseFloat(centerXOffsetInput.value) || 0;
+  let totalWidth = 0;
+  
+  wordsToShow.forEach((w, idx) => {
+    const wWidth = ctx.measureText(w.text).width;
+    totalWidth += wWidth + tracking;
+    if (idx < wordsToShow.length - 1) {
+      totalWidth += wordGap;
+    }
+  });
+
+  let startX = centerX - (totalWidth / 2);
+  const lineY = centerY;
+
+  wordsToShow.forEach((w, idx) => {
+    const wWidth = ctx.measureText(w.text).width;
+
+    // Target position for this word
+    w.targetX = startX;
+    w.targetY = lineY;
+
+    // Initialize anim positions if they don't exist
+    if (w.animX === undefined) { w.animX = w.x; w.animY = w.y; }
+
+    // Smoothly interpolate towards the target
+    w.animX = lerp(w.animX, w.targetX, LAYOUT_EASE);
+    w.animY = lerp(w.animY, w.targetY, LAYOUT_EASE);
+
+    // Calculate opacity based on whether this is the active word
+    let opacity = 1.0;
+    const wordElapsed = activeTime - w.startTime;
+    const fadeInDuration = w.duration * 0.3;
+    const fadeOutDelay = parseFloat(fadeOutDelayInput ? fadeOutDelayInput.value : 0);
+    
+    if (wordElapsed < 0) {
+      opacity = 0;
+    } else if (wordElapsed <= fadeInDuration) {
+      opacity = wordElapsed / fadeInDuration;
+    } else if (wordElapsed > fadeInDuration + fadeOutDelay) {
+      const fadeOutProgress = (wordElapsed - fadeInDuration - fadeOutDelay) / (w.duration - fadeInDuration - fadeOutDelay);
+      opacity = Math.max(1 - fadeOutProgress, 0);
+    }
+
+    // Pass the animated position to renderWord
+    renderWord(w, elapsed, fontSize, fontStyle, tracking, driftSpeed, w.animX, w.animY, opacity);
+
+    // Move startX for next word
+    startX += wWidth + tracking;
+    if (idx < wordsToShow.length - 1) {
+      startX += wordGap;
+    }
+  });
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+}
+
+// --- Single-Line Settings Visibility Toggle ---
+const singleLineSettings = document.getElementById('singleLineSettings');
+const maxWordsDisplayInput = document.getElementById('maxWordsDisplay');
+const maxWordsVal = document.getElementById('maxWordsVal');
+
+if (maxWordsDisplayInput && maxWordsVal) {
+  maxWordsDisplayInput.addEventListener('input', (e) => {
+    maxWordsVal.textContent = e.target.value;
+    saveState();
+    if (isAudioSyncMode) {
+      buildWordStructuresFromAudio(activeWordsData);
+    } else {
+      buildWordStructures();
+    }
+    drawFrameAtCurrentTime();
+    if (!isAudioSyncMode) startAnimation();
+  });
+}
+
 // --- Layout Mode Switch ---
 layoutModeInput.addEventListener('change', () => {
   saveState();
   
+  // Show/hide single-line settings based on mode
+  if (singleLineSettings) {
+    singleLineSettings.style.display = layoutModeInput.value === 'single-line' ? 'block' : 'none';
+  }
   
   // Word Gap setting is now always visible for all layouts (no need to toggle)
   // The centerXOffset slider applies to all layout modes

@@ -189,8 +189,15 @@
           <option value="standard" selected>Standard (Top-Down)</option>
           <option value="subtitle">Subtitle (Experimental - Bottom Anchored)</option>
           <option value="focused-center">Focused Center (3-Line)</option>
+          <option value="single-line">Single Line (Fixed Position)</option>
         </select>
         <span id="layoutModeDesc" style="position:absolute; clip:rect(0 0 0 0); overflow:hidden;">Choose how words are arranged on the canvas</span>
+      </div>
+
+      <div class="form-group" id="singleLineSettings" style="display:none;">
+        <label for="maxWordsDisplay">Max Words Displayed <span id="maxWordsVal">4</span></label>
+        <input type="range" id="maxWordsDisplay" name="maxWordsDisplay" min="1" max="10" step="1" value="4" data-default="4">
+        <span style="font-size:0.65rem; color:#6a6a78; display:block; margin-top:4px;">Number of words to show at once in single-line mode</span>
       </div>
 
       <div class="form-group collapsible-group">
