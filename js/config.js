@@ -33,6 +33,11 @@ const redoBtn = document.getElementById('redoBtn');
 const skipBackBtn = document.getElementById('skipBackBtn');
 const skipForwardBtn = document.getElementById('skipForwardBtn');
 
+// --- Audio Upload ---
+const audioUpload = document.getElementById('audioUpload');
+const processAudioBtn = document.getElementById('processAudioBtn');
+const transcriptionModeSelect = document.getElementById('transcriptionMode');
+
 // NOTE: There is a "Words Per Line" slider in the HTML (#focusedWordsPerLine)
 // but nothing in the codebase reads its value during layout — it currently
 // has no effect. Left as-is since wiring it up would change behavior;
@@ -59,8 +64,7 @@ function getCachedFontSize() {
     return cache.fontSize;
   }
   
-  // Compute new value
-  // fontScale removed
+  // Compute new value - fixed scale factor of 1.0
   const baseSize = Math.min(canvas.width * 0.032, 22);
   cache.fontSize = baseSize;
   cache.lastFontSizeTime = now;
