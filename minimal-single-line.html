@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Single Line Text</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #050505;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: white;
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* Simple UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        .control-group {
+            margin-bottom: 10px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: #aaa;
+        }
+
+        textarea, input[type="range"], select {
+            width: 100%;
+            background: #222;
+            border: 1px solid #444;
+            color: white;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        
+        button {
+            background: #444;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        button:hover {
+            background: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- UI Controls -->
+    <div id="ui-layer">
+        <div class="control-group">
+            <label>Text Input</label>
+            <textarea id="textInput" rows="4">The quick brown fox jumps over the lazy dog. We are building a single line layout.</textarea>
+        </div>
+        
+        <div class="control-group">
+            <label>Words Visible (Max)</label>
+            <input type="range" id="wordCount" min="1" max="10" value="4">
+            <span id="wordCountVal">4</span>
+        </div>
+
+        <div class="control-group">
+            <label>Speed (ms per word)</label>
+            <input type="range" id="speed" min="100" max="2000" step="50" value="500">
+            <span id="speedVal">500</span> ms
+        </div>
+
+        <button id="resetBtn">Reset / Restart</button>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+<script>
+    /**
+     * MINIMAL RESET VERSION
+     * - No complex effects
+     * - No audio sync
+     * - No multiple layout modes
+     * - Just: Single Line Logic
+     */
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // UI Elements
+    const textInput = document.getElementById('textInput');
+    const wordCountInput = document.getElementById('wordCount');
+    const wordCountVal = document.getElementById('wordCountVal');
+    const speedInput = document.getElementById('speed');
+    const speedVal = document.getElementById('speedVal');
+    const resetBtn = document.getElementById('resetBtn');
+
+    // State
+    let words = [];
+    let currentTime = 0;
+    let lastFrameTime = 0;
+    let wordDuration = 500; // ms per word
+    let maxVisibleWords = 4;
+    
+    // Resize handling
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Update UI displays
+    wordCountInput.addEventListener('input', (e) => {
+        maxVisibleWords = parseInt(e.target.value);
+        wordCountVal.textContent = maxVisibleWords;
+    });
+
+    speedInput.addEventListener('input', (e) => {
+        wordDuration = parseInt(e.target.value);
+        speedVal.textContent = wordDuration;
+    });
+
+    resetBtn.addEventListener('click', () => {
+        currentTime = 0;
+        lastFrameTime = performance.now();
+        parseText();
+    });
+
+    textInput.addEventListener('input', parseText);
+
+    function parseText() {
+        const raw = textInput.value.trim();
+        // Split by whitespace and filter empty strings
+        words = raw.split(/\s+/).filter(w => w.length > 0);
+    }
+
+    // Initialize
+    parseText();
+    lastFrameTime = performance.now();
+
+    /**
+     * CORE LOGIC: SINGLE LINE CONTAINER
+     * 
+     * Concept:
+     * 1. Calculate which "slice" of words should be visible based on time.
+     * 2. Draw them in a straight horizontal line at the center.
+     */
+    function draw() {
+        const now = performance.now();
+        const dt = now - lastFrameTime;
+        lastFrameTime = now;
+
+        // Advance time
+        currentTime += dt;
+
+        // Clear Screen
+        ctx.fillStyle = '#050505';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        if (words.length === 0) {
+            requestAnimationFrame(draw);
+            return;
+        }
+
+        // 1. Determine Current Word Index based on time
+        // How many full durations have passed?
+        const totalIndex = Math.floor(currentTime / wordDuration);
+        
+        // Loop back if we reach the end (optional, or just stop)
+        const loopedIndex = totalIndex % words.length;
+
+        // 2. Determine the "Window" of words to show
+        // We want to show 'maxVisibleWords' ending at the current word
+        const visibleWords = [];
+        
+        for (let i = 0; i < maxVisibleWords; i++) {
+            // Calculate index backwards from current
+            let idx = loopedIndex - i;
+            
+            // Handle wrapping for negative indices (show end of sentence at start)
+            if (idx < 0) {
+                idx = words.length + idx;
+            }
+            
+            // We push to array then reverse later so they draw Left -> Right
+            visibleWords.push({
+                text: words[idx],
+                offset: i // 0 is the newest word, 1 is previous, etc.
+            });
+        }
+
+        // Reverse so index 0 (newest) is on the right, or left? 
+        // Let's make index 0 the RIGHTMOST word (current), and older words to the left.
+        visibleWords.reverse();
+
+        // 3. Render the Container Line
+        renderSingleLineContainer(visibleWords);
+
+        requestAnimationFrame(draw);
+    }
+
+    function renderSingleLineContainer(wordObjects) {
+        ctx.font = "bold 48px Arial";
+        ctx.textBaseline = "middle";
+        
+        // Measure total width to center the whole group
+        let totalWidth = 0;
+        const gap = 20; // Space between words
+        
+        wordObjects.forEach(obj => {
+            const metrics = ctx.measureText(obj.text);
+            totalWidth += metrics.width;
+        });
+        
+        // Add gaps
+        totalWidth += (wordObjects.length - 1) * gap;
+
+        // Starting X position (Centered)
+        let startX = (canvas.width - totalWidth) / 2;
+        const centerY = canvas.height / 2;
+
+        // Draw each word
+        wordObjects.forEach((obj, index) => {
+            const metrics = ctx.measureText(obj.text);
+            const x = startX + (metrics.width / 2); // Center anchor for text
+            
+            // Basic styling
+            ctx.fillStyle = "#ffffff";
+            
+            // Optional: Fade out older words (simple opacity effect)
+            // The newest word (last in array) is fully opaque, older ones fade
+            const ageFactor = index / wordObjects.length; 
+            ctx.globalAlpha = 0.3 + (0.7 * (1 - ageFactor)); 
+
+            ctx.fillText(obj.text, x, centerY);
+            
+            // Reset alpha
+            ctx.globalAlpha = 1.0;
+
+            // Move start position for next word
+            startX += metrics.width + gap;
+        });
+    }
+
+    // Start Loop
+    requestAnimationFrame(draw);
+
+</script>
+</body>
+</html>
