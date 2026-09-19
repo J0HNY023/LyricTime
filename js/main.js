@@ -41,9 +41,7 @@ let currentEffectMode = 'none';
 
 // --- Initialization ---
 function init() {
-  canvas = document.getElementById('canvas');
-  ctx = canvas.getContext('2d');
-  
+  // Canvas already initialized in config.js
   // Get UI elements
   fontScaleInput = document.getElementById('fontScaleInput');
   fontStyleInput = document.getElementById('fontStyleInput');
@@ -229,6 +227,9 @@ function mainLoop(timestamp) {
   drawFrameAtCurrentTime();
   requestAnimationFrame(mainLoop);
 }
+
+// Alias for animate function used by other modules
+const animate = mainLoop;
 
 function drawFrameAtCurrentTime() {
   if (!ctx) return;

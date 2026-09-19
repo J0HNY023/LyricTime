@@ -7,7 +7,7 @@ let showAltTips = true;
 let isDebugMode = false;
 let isLooping = false;
 
-let animationFrame;
+let animationFrame = null;
 let wordObjects = [];
 let activeWordsData = [];
 let startTime = null;
